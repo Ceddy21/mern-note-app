@@ -18,9 +18,15 @@ const noteSchema = new mongoose.Schema({
         default: '',
     },
 
+    type: {
+        type: String,
+        enim: ['text', 'checkbox'],
+        default: 'text'
+    },
+
     checklist: [{
         text: String,
-        default: 'text',
+        checked: Boolean,
     }],
 
     color: {
