@@ -72,6 +72,17 @@ app.get('/api/test', (req, res) => {
   res.json({ message: 'Backend is running!' });
 });
 
+// ── Temporary Debug Route ──
+app.get('/api/debug/users', async (req, res) => {
+  try {
+    const User = require('./models/User');
+    const users = await User.find({}).select('-password');
+    res.json({ count: users.length, users });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ── Start Server ──
 app.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);

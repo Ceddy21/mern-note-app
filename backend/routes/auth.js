@@ -60,24 +60,37 @@ const checkCooldown = (user) => {
 
 // ─── SIGNUP ───
 router.post('/signup', async (req, res) => {
+  console.log('📥 Signup request received:', { 
+    email: req.body.email, 
+    username: req.body.username,
+    hasPassword: !!req.body.password 
+  });
+  
   try {
     const { username, email, password } = req.body;
 
+    // ── Validate input ──
     if (!username || !email || !password) {
+      console.log('❌ Missing fields');
       return res.status(400).json({ message: 'All fields are required' });
     }
 
     if (!isPasswordStrong(password)) {
+      console.log('❌ Weak password');
       return res.status(400).json({
         message: 'Password must be at least 8 characters with uppercase, lowercase, number, and special character.'
       });
     }
 
-    const existingUser = await User.findOne({ $or: [{ email }, { username }] });
+    // ── Check if user exists ──
+    const existingUser = await User.findOne({ $or: [{ email: email.toLowerCase() }, { username }] });
+    
     if (existingUser) {
+      console.log('❌ User already exists:', existingUser.email);
       return res.status(400).json({ message: 'User already exists' });
     }
 
+    // ── Hash password and create user ──
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const user = new User({
@@ -86,29 +99,56 @@ router.post('/signup', async (req, res) => {
       password: hashedPassword,
       isVerified: false,
     });
-    await user.save();
 
-    // ── Generate code ──
+    console.log('💾 Saving user to MongoDB...');
+    await user.save();
+    console.log('✅ User saved successfully, ID:', user._id);
+
+    // ── Generate verification code ──
     const code = Math.floor(100000 + Math.random() * 900000).toString();
     user.verificationCode = code;
     user.verificationCodeExpires = Date.now() + 15 * 60 * 1000;
     user.lastVerificationRequestAt = new Date();
     await user.save();
+    console.log('✅ Verification code generated for:', user.email);
 
-    // ── Send email in background (NON-BLOCKING) ──
+    // ── Send email in background ──
     if (transporter) {
+      console.log('📧 Sending verification email to:', user.email);
       transporter.sendMail({
         to: user.email,
         from: `"Nota" <${process.env.EMAIL_FROM || 'noreply@nota.com'}>`,
-        subject: 'Verify Your Email',
+        subject: 'Verify Your Email - Nota',
         html: `
-          <h1>Welcome to Nota!</h1>
-          <p>Your verification code is:</p>
-          <h2 style="font-size: 32px; letter-spacing: 4px; background: #f0f0f0; padding: 10px 20px; display: inline-block;">${code}</h2>
-          <p>This code expires in 15 minutes.</p>
-          <p>If you didn't sign up, please ignore this email.</p>
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <style>
+              body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+              .container { max-width: 500px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 10px; }
+              .code { font-size: 32px; letter-spacing: 4px; background: #f0f4ff; padding: 10px 20px; display: inline-block; border-radius: 5px; font-weight: bold; color: #3b82f6; }
+              .footer { margin-top: 20px; font-size: 12px; color: #999; }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <h1>Welcome to Nota! 🎉</h1>
+              <p>Thanks for signing up. Please use the code below to verify your email address:</p>
+              <div style="text-align: center; margin: 30px 0;">
+                <span class="code">${code}</span>
+              </div>
+              <p>This code will expire in <strong>15 minutes</strong>.</p>
+              <p>If you didn't sign up for Nota, please ignore this email.</p>
+              <div class="footer">
+                <p>Nota - Your smart note-taking app</p>
+              </div>
+            </div>
+          </body>
+          </html>
         `,
-      }).catch(err => console.error('❌ Email send error:', err));
+      })
+      .then(() => console.log('✅ Verification email sent to:', user.email))
+      .catch((err) => console.error('❌ Email send error:', err));
     } else {
       console.warn('⚠️ Email not sent: transporter not configured');
     }
@@ -118,8 +158,9 @@ router.post('/signup', async (req, res) => {
       message: 'Account created. Please check your email for verification code.',
       email: user.email,
     });
+
   } catch (err) {
-    console.error('Signup error:', err);
+    console.error('❌ Signup error:', err);
     res.status(400).json({ message: err.message });
   }
 });
@@ -138,7 +179,6 @@ router.post('/send-verification', async (req, res) => {
       return res.status(400).json({ message: 'Email already verified' });
     }
 
-    // ── Cooldown check ──
     const cooldown = checkCooldown(user);
     if (cooldown.blocked) {
       const minutes = Math.ceil(cooldown.remainingSeconds / 60);
@@ -148,14 +188,12 @@ router.post('/send-verification', async (req, res) => {
       });
     }
 
-    // Generate new code
     const code = Math.floor(100000 + Math.random() * 900000).toString();
     user.verificationCode = code;
     user.verificationCodeExpires = Date.now() + 15 * 60 * 1000;
     user.lastVerificationRequestAt = new Date();
     await user.save();
 
-    // ── Send email in background ──
     if (transporter) {
       transporter.sendMail({
         to: user.email,
@@ -164,7 +202,7 @@ router.post('/send-verification', async (req, res) => {
         html: `
           <h1>Resend Verification Code</h1>
           <p>Your new verification code is:</p>
-          <h2 style="font-size: 32px; letter-spacing: 4px; background: #f0f0f0; padding: 10px 20px; display: inline-block;">${code}</h2>
+          <h2 style="font-size: 32px; letter-spacing: 4px; background: #f0f4ff; padding: 10px 20px; display: inline-block;">${code}</h2>
           <p>This code expires in 15 minutes.</p>
         `,
       }).catch(err => console.error('❌ Email send error:', err));
@@ -218,7 +256,6 @@ router.post('/forgot-password', async (req, res) => {
       return res.json({ message: 'If an account with that email exists, a reset link has been sent.' });
     }
 
-    // ── Cooldown check ──
     const cooldown = checkCooldown(user);
     if (cooldown.blocked) {
       const minutes = Math.ceil(cooldown.remainingSeconds / 60);
@@ -228,15 +265,14 @@ router.post('/forgot-password', async (req, res) => {
       });
     }
 
-    // Generate reset token
     const token = crypto.randomBytes(32).toString('hex');
     user.resetPasswordToken = token;
-    user.resetPasswordExpires = Date.now() + 3600000; // 1 hour
+    user.resetPasswordExpires = Date.now() + 3600000;
     user.lastVerificationRequestAt = new Date();
     await user.save();
 
-    // ── Send email in background ──
     const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${token}`;
+    
     if (transporter) {
       transporter.sendMail({
         to: user.email,
@@ -244,10 +280,9 @@ router.post('/forgot-password', async (req, res) => {
         subject: 'Password Reset',
         html: `
           <h1>Password Reset</h1>
-          <p>You requested a password reset. Click the link below to reset your password:</p>
+          <p>You requested a password reset. Click the link below:</p>
           <a href="${resetUrl}" style="display:inline-block; padding:10px 20px; background:#3b82f6; color:white; text-decoration:none; border-radius:5px;">Reset Password</a>
-          <p>If you did not request this, please ignore this email.</p>
-          <p>This link will expire in 1 hour.</p>
+          <p>This link expires in 1 hour.</p>
         `,
       }).catch(err => console.error('❌ Email send error:', err));
     }
@@ -255,7 +290,7 @@ router.post('/forgot-password', async (req, res) => {
     res.json({ message: 'If an account with that email exists, a reset link has been sent.' });
   } catch (err) {
     console.error('Forgot password error:', err);
-    res.status(500).json({ message: 'Error sending email. Please try again later.' });
+    res.status(500).json({ message: 'Error sending email.' });
   }
 });
 
@@ -310,7 +345,7 @@ router.post('/login', async (req, res) => {
 
     if (!user.isVerified) {
       return res.status(401).json({
-        message: 'Please verify your email before logging in. Check your inbox for the verification code.',
+        message: 'Please verify your email before logging in.',
         needsVerification: true,
         email: user.email,
       });
@@ -318,7 +353,7 @@ router.post('/login', async (req, res) => {
 
     if (!user.password) {
       return res.status(401).json({
-        message: 'This account uses Google Sign-In. Please use Google login.',
+        message: 'This account uses Google Sign-In.',
       });
     }
 
