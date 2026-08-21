@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
 import { FaSun, FaMoon, FaCheckCircle, FaTimesCircle } from 'react-icons/fa';
@@ -15,6 +15,28 @@ const VerifyEmail = () => {
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [resendLoading, setResendLoading] = useState(false);
+
+  // ── Cooldown state (5 min = 300 seconds) ──
+  const [cooldownSeconds, setCooldownSeconds] = useState(300);
+  const [isCooldown, setIsCooldown] = useState(true);
+
+  // ── Start countdown on mount (code just sent) ──
+  useEffect(() => {
+    if (cooldownSeconds > 0 && isCooldown) {
+      const timer = setTimeout(() => {
+        setCooldownSeconds(prev => prev - 1);
+      }, 1000);
+      return () => clearTimeout(timer);
+    } else if (cooldownSeconds === 0) {
+      setIsCooldown(false);
+    }
+  }, [cooldownSeconds, isCooldown]);
+
+  const formatTime = (seconds) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+  };
 
   const handleVerify = async (e) => {
     e.preventDefault();
@@ -34,14 +56,26 @@ const VerifyEmail = () => {
   };
 
   const handleResend = async () => {
+    if (isCooldown) return; // button disabled, but just in case
     setResendLoading(true);
     setError('');
     setMessage('');
+
     try {
       const response = await api.post('/auth/send-verification', { email });
       setMessage(response.data.message);
+      // Reset cooldown
+      setCooldownSeconds(300);
+      setIsCooldown(true);
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to resend code');
+      const data = err.response?.data || {};
+      if (data.remainingSeconds) {
+        setCooldownSeconds(data.remainingSeconds);
+        setIsCooldown(true);
+        setError(data.message);
+      } else {
+        setError(data.message || 'Failed to resend code');
+      }
     } finally {
       setResendLoading(false);
     }
@@ -123,10 +157,10 @@ const VerifyEmail = () => {
             Didn't receive the code?{' '}
             <button
               onClick={handleResend}
-              disabled={resendLoading}
-              className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 font-medium transition"
+              disabled={resendLoading || isCooldown}
+              className={`font-medium transition ${isCooldown ? 'text-gray-400 dark:text-gray-600 cursor-not-allowed' : 'text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300'}`}
             >
-              {resendLoading ? 'Sending...' : 'Resend Code'}
+              {resendLoading ? 'Sending...' : isCooldown ? `Resend in ${formatTime(cooldownSeconds)}` : 'Resend Code'}
             </button>
           </p>
         </div>

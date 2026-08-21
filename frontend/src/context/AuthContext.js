@@ -36,8 +36,6 @@ export const AuthProvider = ({ children }) => {
   const signup = async (username, email, password) => {
     try {
       const response = await api.post('/auth/signup', { username, email, password });
-      // After signup, user is created but not verified
-      // Redirect to verification page
       return {
         success: true,
         needsVerification: true,
@@ -124,6 +122,26 @@ export const AuthProvider = ({ children }) => {
     }
   }, [token]);
 
+  // ── Refresh User (fetch latest data) ──
+  const refreshUser = async () => {
+    if (!token) {
+      console.log('⚠️ No token, cannot refresh user');
+      return;
+    }
+    try {
+      console.log('🔄 Refreshing user data...');
+      const response = await api.get('/auth/me', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      console.log('✅ User refreshed:', response.data);
+      setUser(response.data);
+    } catch (err) {
+      console.error('❌ Failed to refresh user:', err.response?.data || err.message);
+    }
+  };
+
   useEffect(() => {
     fetchUser();
   }, [fetchUser]);
@@ -136,6 +154,7 @@ export const AuthProvider = ({ children }) => {
     logout,
     googleLogin,
     handleOAuthRedirect,
+    refreshUser,
     isAuthenticated: !!user,
   };
 

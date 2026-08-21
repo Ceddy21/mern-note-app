@@ -32,6 +32,7 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [logoError, setLogoError] = useState(false);
 
   const [passwordChecks, setPasswordChecks] = useState({
     length: false,
@@ -40,6 +41,11 @@ const Login = () => {
     number: false,
     special: false,
   });
+
+  const LOGO_URL = 'https://res.cloudinary.com/sqlrnnth/image/upload/v1787311243/Nota_logo_nobg.png';
+
+  // ── Logo filter for dark mode ──
+  const logoFilter = theme === 'dark' ? 'brightness(0) invert(1)' : 'none';
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -62,7 +68,6 @@ const Login = () => {
     setLoading(true);
     setError('');
 
-    // Validate confirm password
     if (!isLogin && formData.password !== formData.confirmPassword) {
       setError('Passwords do not match');
       setLoading(false);
@@ -76,14 +81,12 @@ const Login = () => {
       result = await signup(formData.username, formData.email, formData.password);
     }
 
-    // ── Handle Signup Success ──
     if (!isLogin && result.success && result.needsVerification) {
       navigate('/verify-email', { state: { email: result.email } });
       setLoading(false);
       return;
     }
 
-    // ── Handle Login Errors / Verification Needed ──
     if (!result.success) {
       if (result.needsVerification) {
         navigate('/verify-email', { state: { email: result.email } });
@@ -121,10 +124,21 @@ const Login = () => {
           )}
         </button>
 
+        {/* ── Logo ── */}
         <div className="flex justify-center mb-6">
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-lg">
-            <FaStickyNote className="text-white text-3xl" />
-          </div>
+          {!logoError ? (
+            <img
+              src={LOGO_URL}
+              alt="Nota Logo"
+              className="w-28 h-28 sm:w-32 sm:h-32 object-contain transition-all duration-300"
+              style={{ filter: logoFilter }}
+              onError={() => setLogoError(true)}
+            />
+          ) : (
+            <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-2xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-lg">
+              <FaStickyNote className="text-white text-5xl sm:text-6xl" />
+            </div>
+          )}
         </div>
 
         <div className="text-center mb-8">

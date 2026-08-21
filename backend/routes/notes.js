@@ -3,7 +3,6 @@ const router = express.Router();
 const Note = require('../models/Note');
 const auth = require('../middleware/auth');
 
-// ─── GET all notes (only user's notes) ───
 router.get('/', auth, async (req, res) => {
   try {
     const notes = await Note.find({ userId: req.userId }).sort('-createdAt');
@@ -13,7 +12,6 @@ router.get('/', auth, async (req, res) => {
   }
 });
 
-// ─── GET a single note ───
 router.get('/:id', auth, async (req, res) => {
   try {
     const note = await Note.findOne({ _id: req.params.id, userId: req.userId });
@@ -26,7 +24,6 @@ router.get('/:id', auth, async (req, res) => {
   }
 });
 
-// ─── CREATE a new note ───
 router.post('/', auth, async (req, res) => {
   try {
     const note = new Note({
@@ -40,7 +37,6 @@ router.post('/', auth, async (req, res) => {
   }
 });
 
-// ─── UPDATE a note ───
 router.put('/:id', auth, async (req, res) => {
   try {
     const note = await Note.findOneAndUpdate(
@@ -57,7 +53,6 @@ router.put('/:id', auth, async (req, res) => {
   }
 });
 
-// ─── DELETE a note ───
 router.delete('/:id', auth, async (req, res) => {
   try {
     const note = await Note.findOneAndDelete({

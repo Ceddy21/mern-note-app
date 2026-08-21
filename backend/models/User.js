@@ -22,6 +22,7 @@ const userSchema = new mongoose.Schema({
   },
   avatar: {
     type: String,
+    default: ''
   },
 
   isVerified: {
@@ -44,6 +45,11 @@ const userSchema = new mongoose.Schema({
   createdAt: {
     type: Date,
     default: Date.now,
+  },
+
+  lastVerificationRequestAt: { 
+    type: Date, 
+    default: null 
   },
 });
 

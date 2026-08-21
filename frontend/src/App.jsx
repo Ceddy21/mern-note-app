@@ -9,8 +9,9 @@ import Login from './components/Login';
 import OAuthRedirect from './components/OAuthRedirect';
 import ProtectedRoute from './components/ProtectedRoute';
 import ForgotPassword from './components/ForgotPassword';
-import ResetPassword from './components/ResetPassword';
+import ResetPassword from './components/Resetpassword';
 import VerifyEmail from './components/VerifyEmail';
+import Profile from './components/Profile';
 import { useNotes } from './hooks/useNotes';
 
 const AppContent = () => {
@@ -123,6 +124,11 @@ function App() {
               </ProtectedRoute>
             }
           />
+          <Route path="/profile" element={
+            <ProtectedRoute>
+              <Profile />
+            </ProtectedRoute>
+          } />
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
       </AuthProvider>

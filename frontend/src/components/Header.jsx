@@ -2,13 +2,13 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
-import { FaStickyNote, FaSun, FaMoon, FaSignOutAlt, FaUser } from 'react-icons/fa';
+import { FaSun, FaMoon, FaSignOutAlt, FaUser } from 'react-icons/fa';
 
 const Header = ({ user, onLogout, onHomeClick }) => {
   const { theme, toggleTheme } = useTheme();
   const [isAnimating, setIsAnimating] = useState(false);
+  const [logoError, setLogoError] = useState(false);
   const navigate = useNavigate();
-  const appName = process.env.REACT_APP_APP_NAME || 'App Name';
 
   const handleToggle = () => {
     setIsAnimating(true);
@@ -23,24 +23,41 @@ const Header = ({ user, onLogout, onHomeClick }) => {
     navigate('/');
   };
 
+  const LOGO_URL = 'https://res.cloudinary.com/sqlrnnth/image/upload/v1787311243/Nota_logo_nobg.png';
+
+  const logoFilter = theme === 'dark' ? 'brightness(0) invert(1)' : 'none';
+
   return (
     <header className="sticky top-0 z-50 bg-white dark:bg-gray-800 shadow-md transition-colors duration-300">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 md:h-20">
+
           <div
             onClick={handleHomeClick}
-            className="flex items-center gap-2 sm:gap-3 cursor-pointer select-none"
+            className="flex items-center cursor-pointer select-none"
           >
-            <FaStickyNote className="text-2xl sm:text-3xl text-blue-500 dark:text-blue-400" />
-            <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-800 dark:text-white tracking-tight">
-              {appName}
-            </h1>
+            {!logoError ? (
+              <img
+                src={LOGO_URL}
+                alt="Nota Logo"
+                className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 object-contain transition-all duration-300"
+                style={{ filter: logoFilter }}
+                onError={() => setLogoError(true)}
+              />
+            ) : (
+              <div className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 flex items-center justify-center bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl text-white font-bold text-3xl sm:text-4xl">
+                N
+              </div>
+            )}
           </div>
 
-          {/* Right side unchanged */}
           <div className="flex items-center gap-3 sm:gap-4">
             {user && (
-              <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
+              <div
+                onClick={() => navigate('/profile')}
+                className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300 cursor-pointer hover:opacity-80 transition"
+                aria-label="Go to profile"
+              >
                 {user.avatar ? (
                   <img
                     src={user.avatar}

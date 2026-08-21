@@ -1,4 +1,3 @@
-// src/components/ConfirmModal.jsx
 import React from 'react';
 import { FaExclamationTriangle, FaTimes } from 'react-icons/fa';
 import { useTheme } from '../context/ThemeContext';
