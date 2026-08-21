@@ -18,25 +18,21 @@ const NoteCard = ({ note, onClick }) => {
   const totalItems = note.checklist?.length || 0;
 
   const backgroundColor = note.color || (isDark ? '#374151' : '#ffffff');
-
   const getTextColor = () => {
-    if (note.color) {
-      return '#1f2937';
-    }
+    if (note.color) return '#1f2937';
     return isDark ? '#f3f4f6' : '#1f2937';
   };
-
   const textColor = getTextColor();
   const isTextDark = textColor === '#1f2937';
 
   return (
     <div
       onClick={onClick}
-      className="rounded-xl p-5 cursor-pointer transition-all duration-200 
+      className="rounded-xl p-4 sm:p-5 cursor-pointer transition-all duration-200 
                  hover:scale-105 hover:shadow-xl border-2 border-transparent
                  hover:border-blue-400 dark:hover:border-blue-500"
       style={{
-        backgroundColor: backgroundColor,
+        backgroundColor,
         color: textColor,
         boxShadow: isDark 
           ? '0 4px 20px rgba(0,0,0,0.4)' 
@@ -44,29 +40,25 @@ const NoteCard = ({ note, onClick }) => {
         fontFamily: note.font || 'sans-serif',
       }}
     >
-      {/* ── Type Badge ── */}
+      {/* Type Badge */}
       <div className="flex justify-end mb-2">
         {note.type === 'checkbox' ? (
-          <span className="text-xs px-2 py-1 rounded-full 
-                         bg-blue-500 dark:bg-blue-600 
-                         text-white font-medium 
-                         flex items-center gap-1 
-                         shadow-sm">
-            <FaCheckCircle size={12} className="text-white" /> Checklist
+          <span className="text-[10px] sm:text-xs px-2 py-1 rounded-full 
+                         bg-blue-500 dark:bg-blue-600 text-white font-medium 
+                         flex items-center gap-1 shadow-sm">
+            <FaCheckCircle size={10} /> Checklist
           </span>
         ) : (
-          <span className="text-xs px-2 py-1 rounded-full 
-                         bg-gray-600 dark:bg-gray-700 
-                         text-white font-medium 
-                         flex items-center gap-1 
-                         shadow-sm">
-            <FaEdit size={12} className="text-white" /> Text
+          <span className="text-[10px] sm:text-xs px-2 py-1 rounded-full 
+                         bg-gray-600 dark:bg-gray-700 text-white font-medium 
+                         flex items-center gap-1 shadow-sm">
+            <FaEdit size={10} /> Text
           </span>
         )}
       </div>
 
       {/* Title */}
-      <h3 className={`text-lg font-bold truncate ${isTextDark ? 'text-gray-800' : ''}`}>
+      <h3 className={`text-base sm:text-lg font-bold truncate ${isTextDark ? 'text-gray-800' : ''}`}>
         {note.title || 'Untitled'}
       </h3>
 

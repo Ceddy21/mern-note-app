@@ -21,19 +21,20 @@ app.use(cors({
   credentials: true,
 }));
 
-// ── Rate Limiting ──
+// ── Increase general rate limit ──
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 100,
+  max: 500, // changed from 100 to 500
   message: 'Too many requests. Please try again later.',
 });
-app.use('/api', limiter);
 
+// ── Increase auth rate limit ──
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 5,
+  max: 50, // changed from 5 to 50
   message: 'Too many login attempts. Please try again later.',
 });
+
 app.use('/api/auth/login', authLimiter);
 
 app.use(express.json());

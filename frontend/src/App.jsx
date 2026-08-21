@@ -1,18 +1,20 @@
-// frontend/src/App.jsx
-import React, { useState } from 'react';
-import { Toaster, toast } from 'react-hot-toast';
-import { FaCheckCircle, FaPlus, FaTrash } from 'react-icons/fa';
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
+import { AuthProvider, useAuth } from './context/AuthContext';
 import Header from './components/Header';
 import NoteList from './components/NoteList';
 import NoteEditor from './components/NoteEditor';
+import Login from './components/Login';
+import OAuthRedirect from './components/OAuthRedirect';
+import ProtectedRoute from './components/ProtectedRoute';
 import { useNotes } from './hooks/useNotes';
 
-function App() {
-  // ── Use the custom hook ──
+const AppContent = () => {
+  const { user, logout } = useAuth();
   const { notes, loading, addNote, editNote, removeNote } = useNotes();
-
-  const [selectedNote, setSelectedNote] = useState(null);
-  const [isEditorOpen, setIsEditorOpen] = useState(false);
+  const [selectedNote, setSelectedNote] = React.useState(null);
+  const [isEditorOpen, setIsEditorOpen] = React.useState(false);
 
   const openEditor = (note = null) => {
     setSelectedNote(note);
@@ -26,50 +28,36 @@ function App() {
     document.body.style.overflow = 'auto';
   };
 
-  // ── Save Note (Create or Update) ──
-  const handleSave = async (noteData) => {
-    try {
-      if (selectedNote?._id) {
-        // Edit existing note
-        await editNote(selectedNote._id, noteData);
-        toast.success(
-          <div className="flex items-center gap-2">
-            <FaCheckCircle className="text-white" /> Note updated successfully!
-          </div>
-        );
-      } else {
-        // Create new note
-        await addNote(noteData);
-        toast.success(
-          <div className="flex items-center gap-2">
-            <FaPlus className="text-white" /> Note created successfully!
-          </div>
-        );
-      }
+  const goHome = () => {
+    if (isEditorOpen) {
       closeEditor();
-    } catch (err) {
-      toast.error('Failed to save note');
     }
   };
 
-  // ── Delete Note ──
+  const handleSave = async (noteData) => {
+    try {
+      if (selectedNote?._id) {
+        await editNote(selectedNote._id, noteData);
+      } else {
+        await addNote(noteData);
+      }
+      closeEditor();
+    } catch (err) {
+      console.error('Save error:', err);
+    }
+  };
+
   const handleDelete = async (id) => {
     try {
       await removeNote(id);
       closeEditor();
-      toast.success(
-        <div className="flex items-center gap-2">
-          <FaTrash className="text-white" /> Note deleted successfully!
-        </div>
-      );
     } catch (err) {
-      toast.error('Failed to delete note');
+      console.error('Delete error:', err);
     }
   };
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
-      {/* Toast Notifications */}
       <Toaster
         position="top-right"
         toastOptions={{
@@ -93,7 +81,7 @@ function App() {
         }}
       />
 
-      <Header />
+      <Header user={user} onLogout={logout} onHomeClick={goHome} />
 
       {isEditorOpen ? (
         <NoteEditor
@@ -111,6 +99,28 @@ function App() {
         />
       )}
     </div>
+  );
+};
+
+function App() {
+  return (
+    <Router>
+      <AuthProvider>
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route path="/oauth-redirect" element={<OAuthRedirect />} />
+          <Route
+            path="/"
+            element={
+              <ProtectedRoute>
+                <AppContent />
+              </ProtectedRoute>
+            }
+          />
+          <Route path="*" element={<Navigate to="/" />} />
+        </Routes>
+      </AuthProvider>
+    </Router>
   );
 }
 

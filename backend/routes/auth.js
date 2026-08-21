@@ -172,7 +172,13 @@ router.get(
 );
 
 // ─── GET CURRENT USER ───
+// ✅ Added Cache-Control headers to prevent 304 caching issue
 router.get('/me', async (req, res) => {
+  // ── Prevent browser caching ──
+  res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.set('Pragma', 'no-cache');
+  res.set('Expires', '0');
+
   try {
     const token = req.header('Authorization')?.replace('Bearer ', '');
     if (!token) {
