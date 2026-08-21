@@ -27,31 +27,30 @@ const generateToken = (userId) => {
   );
 };
 
-// ─── Email Transporter (Gmail - SSL Port 465) ───
+// ─── Email Transporter (Gmail - IPv4 forced) ───
 let transporter;
 try {
   transporter = nodemailer.createTransport({
     host: process.env.EMAIL_HOST || 'smtp.gmail.com',
-    port: parseInt(process.env.EMAIL_PORT) || 465,
-    secure: true, // SSL (port 465)
+    port: parseInt(process.env.EMAIL_PORT) || 587,
+    secure: process.env.EMAIL_SECURE === 'true', // false for STARTTLS
     auth: {
       user: process.env.EMAIL_USER,
       pass: process.env.EMAIL_PASS,
     },
-    // ── Timeout settings for Render ──
-    connectionTimeout: 30000,      // 30 seconds
+    // ── Critical: Force IPv4 ──
+    family: 4,
+    // ── Timeouts ──
+    connectionTimeout: 30000,
     greetingTimeout: 30000,
-    socketTimeout: 60000,          // 60 seconds
-    // ── TLS settings ──
+    socketTimeout: 60000,
     tls: {
       rejectUnauthorized: false,
-      ciphers: 'SSLv3',
     },
-    // ── Debug logging ──
     debug: process.env.NODE_ENV === 'development',
     logger: process.env.NODE_ENV === 'development',
   });
-  console.log('✅ Email transporter configured (Gmail SSL)');
+  console.log('✅ Email transporter configured (Gmail IPv4)');
 } catch (err) {
   console.warn('⚠️ Email transporter error:', err.message);
   transporter = null;
@@ -81,7 +80,6 @@ router.post('/signup', async (req, res) => {
   try {
     const { username, email, password } = req.body;
 
-    // ── Validate input ──
     if (!username || !email || !password) {
       console.log('❌ Missing fields');
       return res.status(400).json({ message: 'All fields are required' });
@@ -94,15 +92,12 @@ router.post('/signup', async (req, res) => {
       });
     }
 
-    // ── Check if user exists ──
     const existingUser = await User.findOne({ $or: [{ email: email.toLowerCase() }, { username }] });
-    
     if (existingUser) {
       console.log('❌ User already exists:', existingUser.email);
       return res.status(400).json({ message: 'User already exists' });
     }
 
-    // ── Hash password and create user ──
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const user = new User({
@@ -116,7 +111,6 @@ router.post('/signup', async (req, res) => {
     await user.save();
     console.log('✅ User saved successfully, ID:', user._id);
 
-    // ── Generate verification code ──
     const code = Math.floor(100000 + Math.random() * 900000).toString();
     user.verificationCode = code;
     user.verificationCodeExpires = Date.now() + 15 * 60 * 1000;
@@ -172,7 +166,6 @@ router.post('/signup', async (req, res) => {
       console.warn('⚠️ Email not sent: transporter not configured');
     }
 
-    // ── Respond immediately ──
     res.status(201).json({
       message: 'Account created. Please check your email for verification code.',
       email: user.email,
@@ -191,12 +184,8 @@ router.post('/send-verification', async (req, res) => {
     if (!email) return res.status(400).json({ message: 'Email is required' });
 
     const user = await User.findOne({ email: email.toLowerCase() });
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-    if (user.isVerified) {
-      return res.status(400).json({ message: 'Email already verified' });
-    }
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    if (user.isVerified) return res.status(400).json({ message: 'Email already verified' });
 
     const cooldown = checkCooldown(user);
     if (cooldown.blocked) {
@@ -264,9 +253,7 @@ router.post('/send-verification', async (req, res) => {
 router.post('/verify-email', async (req, res) => {
   try {
     const { email, code } = req.body;
-    if (!email || !code) {
-      return res.status(400).json({ message: 'Email and code are required' });
-    }
+    if (!email || !code) return res.status(400).json({ message: 'Email and code are required' });
 
     const user = await User.findOne({
       email: email.toLowerCase(),
@@ -274,9 +261,7 @@ router.post('/verify-email', async (req, res) => {
       verificationCodeExpires: { $gt: Date.now() },
     });
 
-    if (!user) {
-      return res.status(400).json({ message: 'Invalid or expired code' });
-    }
+    if (!user) return res.status(400).json({ message: 'Invalid or expired code' });
 
     user.isVerified = true;
     user.verificationCode = undefined;
@@ -351,18 +336,14 @@ router.post('/forgot-password', async (req, res) => {
 router.post('/reset-password', async (req, res) => {
   try {
     const { token, newPassword } = req.body;
-    if (!token || !newPassword) {
-      return res.status(400).json({ message: 'Token and new password are required' });
-    }
+    if (!token || !newPassword) return res.status(400).json({ message: 'Token and new password are required' });
 
     const user = await User.findOne({
       resetPasswordToken: token,
       resetPasswordExpires: { $gt: Date.now() },
     });
 
-    if (!user) {
-      return res.status(400).json({ message: 'Invalid or expired token' });
-    }
+    if (!user) return res.status(400).json({ message: 'Invalid or expired token' });
 
     if (!isPasswordStrong(newPassword)) {
       return res.status(400).json({
@@ -387,14 +368,10 @@ router.post('/reset-password', async (req, res) => {
 router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
-    if (!email || !password) {
-      return res.status(400).json({ message: 'Email and password are required' });
-    }
+    if (!email || !password) return res.status(400).json({ message: 'Email and password are required' });
 
     const user = await User.findOne({ email: email.toLowerCase() });
-    if (!user) {
-      return res.status(401).json({ message: 'Invalid credentials' });
-    }
+    if (!user) return res.status(401).json({ message: 'Invalid credentials' });
 
     if (!user.isVerified) {
       return res.status(401).json({
@@ -405,15 +382,11 @@ router.post('/login', async (req, res) => {
     }
 
     if (!user.password) {
-      return res.status(401).json({
-        message: 'This account uses Google Sign-In.',
-      });
+      return res.status(401).json({ message: 'This account uses Google Sign-In.' });
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      return res.status(401).json({ message: 'Invalid credentials' });
-    }
+    if (!isMatch) return res.status(401).json({ message: 'Invalid credentials' });
 
     const token = generateToken(user._id);
     res.json({
@@ -496,15 +469,11 @@ router.get('/me', async (req, res) => {
 
   try {
     const token = req.header('Authorization')?.replace('Bearer ', '');
-    if (!token) {
-      return res.status(401).json({ message: 'No token provided' });
-    }
+    if (!token) return res.status(401).json({ message: 'No token provided' });
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const user = await User.findById(decoded.userId).select('-password');
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
+    if (!user) return res.status(404).json({ message: 'User not found' });
     res.json(user);
   } catch (err) {
     res.status(401).json({ message: 'Invalid token' });
