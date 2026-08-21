@@ -27,22 +27,22 @@ app.use(cors({
 
 // ── Rate Limiting ──
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 500, // 500 requests per 15 minutes
+  windowMs: 15 * 60 * 1000,
+  max: 500,
   message: 'Too many requests. Please try again later.',
 });
 app.use('/api', limiter);
 
 const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 50, // 50 login attempts per 15 minutes
+  windowMs: 15 * 60 * 1000,
+  max: 50,
   message: 'Too many login attempts. Please try again later.',
 });
 app.use('/api/auth/login', authLimiter);
 
 const forgotLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 3, // 3 password reset requests per 15 minutes
+  windowMs: 15 * 60 * 1000,
+  max: 3,
   message: 'Too many password reset requests. Please try again later.',
 });
 app.use('/api/auth/forgot-password', forgotLimiter);

@@ -8,6 +8,7 @@ const User = require('../models/User');
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');
 
+// ─── Password Helper ───
 const isPasswordStrong = (password) => {
   if (password.length < 8) return false;
   if (!/[A-Z]/.test(password)) return false;
@@ -17,6 +18,7 @@ const isPasswordStrong = (password) => {
   return true;
 };
 
+// ─── Generate JWT Token ───
 const generateToken = (userId) => {
   return jwt.sign(
     { userId },
@@ -25,18 +27,27 @@ const generateToken = (userId) => {
   );
 };
 
-const transporter = nodemailer.createTransport({
-  host: process.env.EMAIL_HOST || 'smtp.gmail.com',
-  port: process.env.EMAIL_PORT || 587,
-  secure: process.env.EMAIL_SECURE === 'true' || false,
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-});
+// ─── Email Transporter ───
+let transporter;
+try {
+  transporter = nodemailer.createTransport({
+    host: process.env.EMAIL_HOST || 'smtp.gmail.com',
+    port: parseInt(process.env.EMAIL_PORT) || 587,
+    secure: process.env.EMAIL_SECURE === 'true',
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASS,
+    },
+  });
+  console.log('✅ Email transporter configured');
+} catch (err) {
+  console.warn('⚠️ Email transporter not configured:', err.message);
+  transporter = null;
+}
 
+// ─── Cooldown helper ───
 const checkCooldown = (user) => {
-  const cooldownMs = 5 * 60 * 1000;
+  const cooldownMs = 5 * 60 * 1000; // 5 minutes
   if (user.lastVerificationRequestAt) {
     const elapsed = Date.now() - new Date(user.lastVerificationRequestAt).getTime();
     if (elapsed < cooldownMs) {
@@ -47,6 +58,7 @@ const checkCooldown = (user) => {
   return { blocked: false };
 };
 
+// ─── SIGNUP ───
 router.post('/signup', async (req, res) => {
   try {
     const { username, email, password } = req.body;
@@ -76,34 +88,43 @@ router.post('/signup', async (req, res) => {
     });
     await user.save();
 
+    // ── Generate code ──
     const code = Math.floor(100000 + Math.random() * 900000).toString();
     user.verificationCode = code;
     user.verificationCodeExpires = Date.now() + 15 * 60 * 1000;
     user.lastVerificationRequestAt = new Date();
     await user.save();
 
-    await transporter.sendMail({
-      to: user.email,
-      from: `"App Name" <${process.env.EMAIL_FROM || 'noreply@yourapp.com'}>`,
-      subject: 'Verify Your Email',
-      html: `
-        <h1>Welcome to App Name!</h1>
-        <p>Your verification code is:</p>
-        <h2 style="font-size: 32px; letter-spacing: 4px; background: #f0f0f0; padding: 10px 20px; display: inline-block;">${code}</h2>
-        <p>This code will expire in 15 minutes.</p>
-        <p>If you didn't sign up, please ignore this email.</p>
-      `,
-    });
+    // ── Send email in background (NON-BLOCKING) ──
+    if (transporter) {
+      transporter.sendMail({
+        to: user.email,
+        from: `"Nota" <${process.env.EMAIL_FROM || 'noreply@nota.com'}>`,
+        subject: 'Verify Your Email',
+        html: `
+          <h1>Welcome to Nota!</h1>
+          <p>Your verification code is:</p>
+          <h2 style="font-size: 32px; letter-spacing: 4px; background: #f0f0f0; padding: 10px 20px; display: inline-block;">${code}</h2>
+          <p>This code expires in 15 minutes.</p>
+          <p>If you didn't sign up, please ignore this email.</p>
+        `,
+      }).catch(err => console.error('❌ Email send error:', err));
+    } else {
+      console.warn('⚠️ Email not sent: transporter not configured');
+    }
 
+    // ── Respond immediately ──
     res.status(201).json({
       message: 'Account created. Please check your email for verification code.',
       email: user.email,
     });
   } catch (err) {
+    console.error('Signup error:', err);
     res.status(400).json({ message: err.message });
   }
 });
 
+// ─── SEND VERIFICATION (resend) ───
 router.post('/send-verification', async (req, res) => {
   try {
     const { email } = req.body;
@@ -117,6 +138,7 @@ router.post('/send-verification', async (req, res) => {
       return res.status(400).json({ message: 'Email already verified' });
     }
 
+    // ── Cooldown check ──
     const cooldown = checkCooldown(user);
     if (cooldown.blocked) {
       const minutes = Math.ceil(cooldown.remainingSeconds / 60);
@@ -126,31 +148,36 @@ router.post('/send-verification', async (req, res) => {
       });
     }
 
+    // Generate new code
     const code = Math.floor(100000 + Math.random() * 900000).toString();
     user.verificationCode = code;
     user.verificationCodeExpires = Date.now() + 15 * 60 * 1000;
     user.lastVerificationRequestAt = new Date();
     await user.save();
 
-    await transporter.sendMail({
-      to: user.email,
-      from: `"App Name" <${process.env.EMAIL_FROM || 'noreply@yourapp.com'}>`,
-      subject: 'Your Verification Code',
-      html: `
-        <h1>Resend Verification Code</h1>
-        <p>Your new verification code is:</p>
-        <h2 style="font-size: 32px; letter-spacing: 4px; background: #f0f0f0; padding: 10px 20px; display: inline-block;">${code}</h2>
-        <p>This code will expire in 15 minutes.</p>
-      `,
-    });
+    // ── Send email in background ──
+    if (transporter) {
+      transporter.sendMail({
+        to: user.email,
+        from: `"Nota" <${process.env.EMAIL_FROM || 'noreply@nota.com'}>`,
+        subject: 'Resend Verification Code',
+        html: `
+          <h1>Resend Verification Code</h1>
+          <p>Your new verification code is:</p>
+          <h2 style="font-size: 32px; letter-spacing: 4px; background: #f0f0f0; padding: 10px 20px; display: inline-block;">${code}</h2>
+          <p>This code expires in 15 minutes.</p>
+        `,
+      }).catch(err => console.error('❌ Email send error:', err));
+    }
 
     res.json({ message: 'New verification code sent to your email.' });
   } catch (err) {
-    console.error(err);
+    console.error('Send verification error:', err);
     res.status(500).json({ message: 'Error sending verification email.' });
   }
 });
 
+// ─── VERIFY EMAIL ───
 router.post('/verify-email', async (req, res) => {
   try {
     const { email, code } = req.body;
@@ -180,6 +207,7 @@ router.post('/verify-email', async (req, res) => {
   }
 });
 
+// ─── FORGOT PASSWORD ───
 router.post('/forgot-password', async (req, res) => {
   try {
     const { email } = req.body;
@@ -190,6 +218,7 @@ router.post('/forgot-password', async (req, res) => {
       return res.json({ message: 'If an account with that email exists, a reset link has been sent.' });
     }
 
+    // ── Cooldown check ──
     const cooldown = checkCooldown(user);
     if (cooldown.blocked) {
       const minutes = Math.ceil(cooldown.remainingSeconds / 60);
@@ -199,33 +228,38 @@ router.post('/forgot-password', async (req, res) => {
       });
     }
 
+    // Generate reset token
     const token = crypto.randomBytes(32).toString('hex');
     user.resetPasswordToken = token;
-    user.resetPasswordExpires = Date.now() + 3600000;
+    user.resetPasswordExpires = Date.now() + 3600000; // 1 hour
     user.lastVerificationRequestAt = new Date();
     await user.save();
 
+    // ── Send email in background ──
     const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${token}`;
-    await transporter.sendMail({
-      to: user.email,
-      from: `"App Name" <${process.env.EMAIL_FROM || 'noreply@yourapp.com'}>`,
-      subject: 'Password Reset',
-      html: `
-        <h1>Password Reset</h1>
-        <p>You requested a password reset. Click the link below to reset your password:</p>
-        <a href="${resetUrl}" style="display:inline-block; padding:10px 20px; background:#3b82f6; color:white; text-decoration:none; border-radius:5px;">Reset Password</a>
-        <p>If you did not request this, please ignore this email.</p>
-        <p>This link will expire in 1 hour.</p>
-      `,
-    });
+    if (transporter) {
+      transporter.sendMail({
+        to: user.email,
+        from: `"Nota" <${process.env.EMAIL_FROM || 'noreply@nota.com'}>`,
+        subject: 'Password Reset',
+        html: `
+          <h1>Password Reset</h1>
+          <p>You requested a password reset. Click the link below to reset your password:</p>
+          <a href="${resetUrl}" style="display:inline-block; padding:10px 20px; background:#3b82f6; color:white; text-decoration:none; border-radius:5px;">Reset Password</a>
+          <p>If you did not request this, please ignore this email.</p>
+          <p>This link will expire in 1 hour.</p>
+        `,
+      }).catch(err => console.error('❌ Email send error:', err));
+    }
 
     res.json({ message: 'If an account with that email exists, a reset link has been sent.' });
   } catch (err) {
-    console.error(err);
+    console.error('Forgot password error:', err);
     res.status(500).json({ message: 'Error sending email. Please try again later.' });
   }
 });
 
+// ─── RESET PASSWORD ───
 router.post('/reset-password', async (req, res) => {
   try {
     const { token, newPassword } = req.body;
@@ -261,6 +295,7 @@ router.post('/reset-password', async (req, res) => {
   }
 });
 
+// ─── LOGIN ───
 router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -307,6 +342,7 @@ router.post('/login', async (req, res) => {
   }
 });
 
+// ─── GOOGLE OAUTH ───
 passport.use(
   new GoogleStrategy(
     {
@@ -342,6 +378,7 @@ passport.use(
   )
 );
 
+// ─── GOOGLE LOGIN ROUTES ───
 router.get(
   '/google',
   passport.authenticate('google', {
@@ -363,6 +400,7 @@ router.get(
   }
 );
 
+// ─── GET CURRENT USER ───
 router.get('/me', async (req, res) => {
   res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
   res.set('Pragma', 'no-cache');
