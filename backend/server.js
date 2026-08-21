@@ -13,40 +13,48 @@ const userRoutes = require('./routes/users');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// ── Security Headers ──
 app.use(helmet());
 
+// ── Trust Proxy (Required for Rate Limiting behind Render) ──
+app.set('trust proxy', 1);
+
+// ── CORS ──
 app.use(cors({
   origin: process.env.FRONTEND_URL || 'http://localhost:3000',
   credentials: true,
 }));
 
+// ── Rate Limiting ──
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 500,
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 500, // 500 requests per 15 minutes
   message: 'Too many requests. Please try again later.',
 });
+app.use('/api', limiter);
 
 const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 50,
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 50, // 50 login attempts per 15 minutes
   message: 'Too many login attempts. Please try again later.',
 });
-
-const forgotLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 3,
-  message: 'Too many password reset requests. Please try again later.',
-});
-
-app.use('/api/auth/forgot-password', forgotLimiter);
 app.use('/api/auth/login', authLimiter);
 
+const forgotLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 3, // 3 password reset requests per 15 minutes
+  message: 'Too many password reset requests. Please try again later.',
+});
+app.use('/api/auth/forgot-password', forgotLimiter);
+
+// ── Body Parsers ──
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// ── Passport ──
 app.use(passport.initialize());
 
-// ── MongoDB Connection with timeout ──
+// ── MongoDB Connection ──
 mongoose.connect(process.env.MONGODB_URI, {
   serverSelectionTimeoutMS: 30000,
   socketTimeoutMS: 45000,
@@ -59,6 +67,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/notes', noteRoutes);
 app.use('/api/users', userRoutes);
 
+// ── Test Route ──
 app.get('/api/test', (req, res) => {
   res.json({ message: 'Backend is running!' });
 });
