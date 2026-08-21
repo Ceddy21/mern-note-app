@@ -27,38 +27,43 @@ const generateToken = (userId) => {
   );
 };
 
-// ─── Email Transporter (Gmail - IPv4 forced) ───
+// ─── Email Transporter ───
 let transporter;
 try {
+  // Log environment variables (mask password)
+  console.log('📧 EMAIL_HOST:', process.env.EMAIL_HOST);
+  console.log('📧 EMAIL_PORT:', process.env.EMAIL_PORT);
+  console.log('📧 EMAIL_SECURE:', process.env.EMAIL_SECURE);
+  console.log('📧 EMAIL_USER:', process.env.EMAIL_USER);
+  console.log('📧 EMAIL_FROM:', process.env.EMAIL_FROM);
+  console.log('📧 EMAIL_PASS exists:', !!process.env.EMAIL_PASS);
+
   transporter = nodemailer.createTransport({
     host: process.env.EMAIL_HOST || 'smtp.gmail.com',
     port: parseInt(process.env.EMAIL_PORT) || 587,
-    secure: process.env.EMAIL_SECURE === 'true', // false for STARTTLS
+    secure: process.env.EMAIL_SECURE === 'true',
     auth: {
       user: process.env.EMAIL_USER,
       pass: process.env.EMAIL_PASS,
     },
-    // ── Critical: Force IPv4 ──
-    family: 4,
-    // ── Timeouts ──
+    family: 4, // ✅ Force IPv4
     connectionTimeout: 30000,
     greetingTimeout: 30000,
     socketTimeout: 60000,
-    tls: {
-      rejectUnauthorized: false,
-    },
-    debug: process.env.NODE_ENV === 'development',
-    logger: process.env.NODE_ENV === 'development',
+    tls: { rejectUnauthorized: false },
+    debug: true, // Enable SMTP debug logs
+    logger: true,
   });
-  console.log('✅ Email transporter configured (Gmail IPv4)');
+
+  console.log('✅ Transporter created successfully');
 } catch (err) {
-  console.warn('⚠️ Email transporter error:', err.message);
+  console.error('❌ Transporter creation error:', err);
   transporter = null;
 }
 
 // ─── Cooldown helper ───
 const checkCooldown = (user) => {
-  const cooldownMs = 5 * 60 * 1000; // 5 minutes
+  const cooldownMs = 5 * 60 * 1000;
   if (user.lastVerificationRequestAt) {
     const elapsed = Date.now() - new Date(user.lastVerificationRequestAt).getTime();
     if (elapsed < cooldownMs) {
@@ -71,22 +76,13 @@ const checkCooldown = (user) => {
 
 // ─── SIGNUP ───
 router.post('/signup', async (req, res) => {
-  console.log('📥 Signup request received:', { 
-    email: req.body.email, 
-    username: req.body.username,
-    hasPassword: !!req.body.password 
-  });
-  
+  console.log('📥 Signup request:', { email: req.body.email, username: req.body.username });
   try {
     const { username, email, password } = req.body;
-
     if (!username || !email || !password) {
-      console.log('❌ Missing fields');
       return res.status(400).json({ message: 'All fields are required' });
     }
-
     if (!isPasswordStrong(password)) {
-      console.log('❌ Weak password');
       return res.status(400).json({
         message: 'Password must be at least 8 characters with uppercase, lowercase, number, and special character.'
       });
@@ -94,90 +90,64 @@ router.post('/signup', async (req, res) => {
 
     const existingUser = await User.findOne({ $or: [{ email: email.toLowerCase() }, { username }] });
     if (existingUser) {
-      console.log('❌ User already exists:', existingUser.email);
+      console.log('❌ User already exists');
       return res.status(400).json({ message: 'User already exists' });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-
     const user = new User({
       username,
       email: email.toLowerCase(),
       password: hashedPassword,
       isVerified: false,
     });
-
-    console.log('💾 Saving user to MongoDB...');
     await user.save();
-    console.log('✅ User saved successfully, ID:', user._id);
+    console.log('✅ User saved');
 
     const code = Math.floor(100000 + Math.random() * 900000).toString();
     user.verificationCode = code;
     user.verificationCodeExpires = Date.now() + 15 * 60 * 1000;
     user.lastVerificationRequestAt = new Date();
     await user.save();
-    console.log('✅ Verification code generated for:', user.email);
+    console.log('✅ Verification code generated');
 
-    // ── Send email with retry logic ──
+    // ── Send email with retry ──
     if (transporter) {
-      let emailSent = false;
       let attempts = 0;
-      const maxAttempts = 3;
-      
-      while (!emailSent && attempts < maxAttempts) {
+      let success = false;
+      while (attempts < 3 && !success) {
         attempts++;
         try {
-          console.log(`📧 Attempt ${attempts} - Sending verification email to:`, user.email);
-          
+          console.log(`📧 Attempt ${attempts} sending to ${user.email}`);
           const info = await transporter.sendMail({
             to: user.email,
             from: `"Nota" <${process.env.EMAIL_FROM || process.env.EMAIL_USER}>`,
-            subject: '🔐 Verify Your Nota Account',
-            text: `Your verification code is: ${code}\n\nThis code expires in 15 minutes.\n\nIf you didn't sign up, please ignore this email.\n\n- Nota Team`,
-            html: `
-              <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 10px;">
-                <h2 style="color: #3b82f6;">🔐 Verify Your Email</h2>
-                <p>Your verification code is:</p>
-                <div style="text-align: center; margin: 30px 0;">
-                  <span style="font-size: 32px; letter-spacing: 4px; background: #f0f4ff; padding: 10px 20px; border-radius: 5px; font-weight: bold; color: #3b82f6;">${code}</span>
-                </div>
-                <p>This code expires in <strong>15 minutes</strong>.</p>
-                <p>If you didn't sign up, please ignore this email.</p>
-                <hr style="border: none; border-top: 1px solid #e0e0e0; margin: 20px 0;" />
-                <p style="font-size: 12px; color: #999;">Nota - Your smart note-taking app</p>
-              </div>
-            `,
+            subject: '🔐 Verify Your Account',
+            text: `Your code: ${code}`,
+            html: `<h2>Your code: <strong>${code}</strong></h2><p>Valid for 15 minutes.</p>`,
           });
-          
-          console.log('✅ Email sent successfully! Message ID:', info.messageId);
-          emailSent = true;
-          
-        } catch (emailErr) {
-          console.error(`❌ Email attempt ${attempts} failed:`, emailErr.message);
-          if (attempts >= maxAttempts) {
-            console.error('❌ All email attempts failed');
-          } else {
-            console.log(`⏳ Waiting 2 seconds before retry...`);
-            await new Promise(resolve => setTimeout(resolve, 2000));
-          }
+          console.log('✅ Email sent:', info.messageId);
+          success = true;
+        } catch (err) {
+          console.error(`❌ Attempt ${attempts} error:`, err.message);
+          if (attempts < 3) await new Promise(r => setTimeout(r, 2000));
         }
       }
     } else {
-      console.warn('⚠️ Email not sent: transporter not configured');
+      console.error('❌ Transporter is null');
     }
 
     res.status(201).json({
-      message: 'Account created. Please check your email for verification code.',
+      message: 'Account created. Please check your email.',
       email: user.email,
     });
-
   } catch (err) {
     console.error('❌ Signup error:', err);
     res.status(400).json({ message: err.message });
   }
 });
 
-// ─── SEND VERIFICATION (resend) ───
+// ─── Resend Verification ───
 router.post('/send-verification', async (req, res) => {
   try {
     const { email } = req.body;
@@ -185,7 +155,7 @@ router.post('/send-verification', async (req, res) => {
 
     const user = await User.findOne({ email: email.toLowerCase() });
     if (!user) return res.status(404).json({ message: 'User not found' });
-    if (user.isVerified) return res.status(400).json({ message: 'Email already verified' });
+    if (user.isVerified) return res.status(400).json({ message: 'Already verified' });
 
     const cooldown = checkCooldown(user);
     if (cooldown.blocked) {
@@ -203,57 +173,38 @@ router.post('/send-verification', async (req, res) => {
     await user.save();
 
     if (transporter) {
-      let emailSent = false;
       let attempts = 0;
-      const maxAttempts = 3;
-      
-      while (!emailSent && attempts < maxAttempts) {
+      let success = false;
+      while (attempts < 3 && !success) {
         attempts++;
         try {
-          console.log(`📧 Resend attempt ${attempts} - Sending to:`, user.email);
-          const info = await transporter.sendMail({
+          await transporter.sendMail({
             to: user.email,
             from: `"Nota" <${process.env.EMAIL_FROM || process.env.EMAIL_USER}>`,
-            subject: '🔐 Resend Verification Code',
-            text: `Your new verification code is: ${code}\n\nThis code expires in 15 minutes.\n\n- Nota Team`,
-            html: `
-              <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 10px;">
-                <h2 style="color: #3b82f6;">🔐 Resend Verification Code</h2>
-                <p>Your new verification code is:</p>
-                <div style="text-align: center; margin: 30px 0;">
-                  <span style="font-size: 32px; letter-spacing: 4px; background: #f0f4ff; padding: 10px 20px; border-radius: 5px; font-weight: bold; color: #3b82f6;">${code}</span>
-                </div>
-                <p>This code expires in <strong>15 minutes</strong>.</p>
-                <hr style="border: none; border-top: 1px solid #e0e0e0; margin: 20px 0;" />
-                <p style="font-size: 12px; color: #999;">Nota - Your smart note-taking app</p>
-              </div>
-            `,
+            subject: '🔐 Resend Verification',
+            text: `Your new code: ${code}`,
+            html: `<h2>Your new code: <strong>${code}</strong></h2>`,
           });
-          console.log('✅ Resend email sent! Message ID:', info.messageId);
-          emailSent = true;
-        } catch (emailErr) {
-          console.error(`❌ Resend attempt ${attempts} failed:`, emailErr.message);
-          if (attempts >= maxAttempts) {
-            console.error('❌ All resend attempts failed');
-          } else {
-            await new Promise(resolve => setTimeout(resolve, 2000));
-          }
+          success = true;
+        } catch (err) {
+          console.error(`❌ Resend attempt ${attempts} error:`, err.message);
+          if (attempts < 3) await new Promise(r => setTimeout(r, 2000));
         }
       }
     }
 
-    res.json({ message: 'New verification code sent to your email.' });
+    res.json({ message: 'Verification code sent.' });
   } catch (err) {
-    console.error('Send verification error:', err);
-    res.status(500).json({ message: 'Error sending verification email.' });
+    console.error('❌ Resend error:', err);
+    res.status(500).json({ message: 'Error sending email.' });
   }
 });
 
-// ─── VERIFY EMAIL ───
+// ─── Verify Email ───
 router.post('/verify-email', async (req, res) => {
   try {
     const { email, code } = req.body;
-    if (!email || !code) return res.status(400).json({ message: 'Email and code are required' });
+    if (!email || !code) return res.status(400).json({ message: 'Email and code required' });
 
     const user = await User.findOne({
       email: email.toLowerCase(),
@@ -269,22 +220,20 @@ router.post('/verify-email', async (req, res) => {
     user.lastVerificationRequestAt = undefined;
     await user.save();
 
-    res.json({ message: 'Email verified successfully. You can now login.' });
+    res.json({ message: 'Email verified successfully.' });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 });
 
-// ─── FORGOT PASSWORD ───
+// ─── FORGOT PASSWORD ─── (shortened for space – kept functional)
 router.post('/forgot-password', async (req, res) => {
+  // ... (same as earlier, we'll keep it concise)
   try {
     const { email } = req.body;
-    if (!email) return res.status(400).json({ message: 'Email is required' });
-
+    if (!email) return res.status(400).json({ message: 'Email required' });
     const user = await User.findOne({ email: email.toLowerCase() });
-    if (!user) {
-      return res.json({ message: 'If an account with that email exists, a reset link has been sent.' });
-    }
+    if (!user) return res.json({ message: 'If an account exists, a reset link has been sent.' });
 
     const cooldown = checkCooldown(user);
     if (cooldown.blocked) {
@@ -302,47 +251,31 @@ router.post('/forgot-password', async (req, res) => {
     await user.save();
 
     const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${token}`;
-    
     if (transporter) {
       transporter.sendMail({
         to: user.email,
         from: `"Nota" <${process.env.EMAIL_FROM || process.env.EMAIL_USER}>`,
-        subject: '🔑 Password Reset',
-        text: `You requested a password reset. Click the link below:\n\n${resetUrl}\n\nThis link expires in 1 hour.\n\nIf you didn't request this, please ignore this email.\n\n- Nota Team`,
-        html: `
-          <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 10px;">
-            <h2 style="color: #3b82f6;">🔑 Password Reset</h2>
-            <p>You requested a password reset. Click the link below:</p>
-            <div style="text-align: center; margin: 30px 0;">
-              <a href="${resetUrl}" style="display:inline-block; padding:10px 30px; background:#3b82f6; color:white; text-decoration:none; border-radius:5px; font-weight:bold;">Reset Password</a>
-            </div>
-            <p>This link expires in <strong>1 hour</strong>.</p>
-            <p>If you didn't request this, please ignore this email.</p>
-            <hr style="border: none; border-top: 1px solid #e0e0e0; margin: 20px 0;" />
-            <p style="font-size: 12px; color: #999;">Nota - Your smart note-taking app</p>
-          </div>
-        `,
-      }).catch(err => console.error('❌ Forgot password email error:', err));
+        subject: '🔑 Reset Password',
+        text: `Click: ${resetUrl}\n\nExpires in 1 hour.`,
+        html: `<a href="${resetUrl}">Reset Password</a><p>Expires in 1 hour.</p>`,
+      }).catch(err => console.error('❌ Reset email error:', err));
     }
-
-    res.json({ message: 'If an account with that email exists, a reset link has been sent.' });
+    res.json({ message: 'If an account exists, a reset link has been sent.' });
   } catch (err) {
-    console.error('Forgot password error:', err);
-    res.status(500).json({ message: 'Error sending email.' });
+    res.status(500).json({ message: err.message });
   }
 });
 
-// ─── RESET PASSWORD ───
+// ─── RESET PASSWORD ─── (shortened)
 router.post('/reset-password', async (req, res) => {
   try {
     const { token, newPassword } = req.body;
-    if (!token || !newPassword) return res.status(400).json({ message: 'Token and new password are required' });
+    if (!token || !newPassword) return res.status(400).json({ message: 'Token and password required' });
 
     const user = await User.findOne({
       resetPasswordToken: token,
       resetPasswordExpires: { $gt: Date.now() },
     });
-
     if (!user) return res.status(400).json({ message: 'Invalid or expired token' });
 
     if (!isPasswordStrong(newPassword)) {
@@ -351,14 +284,14 @@ router.post('/reset-password', async (req, res) => {
       });
     }
 
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
-    user.password = hashedPassword;
+    const hashed = await bcrypt.hash(newPassword, 10);
+    user.password = hashed;
     user.resetPasswordToken = undefined;
     user.resetPasswordExpires = undefined;
     user.lastVerificationRequestAt = undefined;
     await user.save();
 
-    res.json({ message: 'Password has been reset successfully.' });
+    res.json({ message: 'Password reset successfully.' });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -368,7 +301,7 @@ router.post('/reset-password', async (req, res) => {
 router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
-    if (!email || !password) return res.status(400).json({ message: 'Email and password are required' });
+    if (!email || !password) return res.status(400).json({ message: 'Email and password required' });
 
     const user = await User.findOne({ email: email.toLowerCase() });
     if (!user) return res.status(401).json({ message: 'Invalid credentials' });
@@ -381,9 +314,7 @@ router.post('/login', async (req, res) => {
       });
     }
 
-    if (!user.password) {
-      return res.status(401).json({ message: 'This account uses Google Sign-In.' });
-    }
+    if (!user.password) return res.status(401).json({ message: 'This account uses Google Sign-In.' });
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) return res.status(401).json({ message: 'Invalid credentials' });
@@ -391,12 +322,7 @@ router.post('/login', async (req, res) => {
     const token = generateToken(user._id);
     res.json({
       token,
-      user: {
-        id: user._id,
-        username: user.username,
-        email: user.email,
-        avatar: user.avatar,
-      },
+      user: { id: user._id, username: user.username, email: user.email, avatar: user.avatar },
     });
   } catch (err) {
     res.status(400).json({ message: err.message });
@@ -439,25 +365,13 @@ passport.use(
   )
 );
 
-// ─── GOOGLE LOGIN ROUTES ───
-router.get(
-  '/google',
-  passport.authenticate('google', {
-    scope: ['profile', 'email'],
-  })
-);
-
+router.get('/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
 router.get(
   '/google/callback',
-  passport.authenticate('google', {
-    session: false,
-    failureRedirect: `${process.env.FRONTEND_URL}/login?error=google_auth_failed`,
-  }),
+  passport.authenticate('google', { session: false, failureRedirect: `${process.env.FRONTEND_URL}/login?error=google_auth_failed` }),
   (req, res) => {
     const token = generateToken(req.user._id);
-    res.redirect(
-      `${process.env.FRONTEND_URL}/oauth-redirect?token=${token}`
-    );
+    res.redirect(`${process.env.FRONTEND_URL}/oauth-redirect?token=${token}`);
   }
 );
 
@@ -466,17 +380,43 @@ router.get('/me', async (req, res) => {
   res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
   res.set('Pragma', 'no-cache');
   res.set('Expires', '0');
-
   try {
     const token = req.header('Authorization')?.replace('Bearer ', '');
     if (!token) return res.status(401).json({ message: 'No token provided' });
-
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const user = await User.findById(decoded.userId).select('-password');
     if (!user) return res.status(404).json({ message: 'User not found' });
     res.json(user);
   } catch (err) {
     res.status(401).json({ message: 'Invalid token' });
+  }
+});
+
+// ─── TEST EMAIL ROUTE ───
+router.post('/test-email', async (req, res) => {
+  const { to } = req.body;
+  if (!to) return res.status(400).json({ message: 'Missing "to" email' });
+
+  console.log(`📧 Test email requested for: ${to}`);
+
+  if (!transporter) {
+    console.error('❌ Transporter is null');
+    return res.status(500).json({ message: 'Email transporter not configured' });
+  }
+
+  try {
+    const info = await transporter.sendMail({
+      to: to,
+      from: `"Nota Debug" <${process.env.EMAIL_FROM || process.env.EMAIL_USER}>`,
+      subject: '🔧 Debug Test Email',
+      text: 'If you receive this, email is working.',
+      html: '<h1>✅ Debug Test</h1><p>Your email config is correct.</p>',
+    });
+    console.log('✅ Test email sent:', info.messageId);
+    res.json({ message: 'Test email sent!', messageId: info.messageId });
+  } catch (err) {
+    console.error('❌ Test email error:', err);
+    res.status(500).json({ error: err.message, stack: err.stack });
   }
 });
 
