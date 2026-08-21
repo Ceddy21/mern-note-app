@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { 
@@ -18,6 +19,8 @@ import {
 const Login = () => {
   const { login, signup, googleLogin } = useAuth();
   const { theme, toggleTheme } = useTheme();
+  const navigate = useNavigate();
+
   const [isLogin, setIsLogin] = useState(true);
   const [formData, setFormData] = useState({
     username: '',
@@ -49,7 +52,7 @@ const Login = () => {
         uppercase: /[A-Z]/.test(value),
         lowercase: /[a-z]/.test(value),
         number: /[0-9]/.test(value),
-        special: /[!@#$%^&*_]/.test(value),  // ✅ underscore added
+        special: /[!@#$%^&*_]/.test(value),
       });
     }
   };
@@ -59,6 +62,7 @@ const Login = () => {
     setLoading(true);
     setError('');
 
+    // Validate confirm password
     if (!isLogin && formData.password !== formData.confirmPassword) {
       setError('Passwords do not match');
       setLoading(false);
@@ -72,9 +76,23 @@ const Login = () => {
       result = await signup(formData.username, formData.email, formData.password);
     }
 
+    // ── Handle Signup Success ──
+    if (!isLogin && result.success && result.needsVerification) {
+      navigate('/verify-email', { state: { email: result.email } });
+      setLoading(false);
+      return;
+    }
+
+    // ── Handle Login Errors / Verification Needed ──
     if (!result.success) {
+      if (result.needsVerification) {
+        navigate('/verify-email', { state: { email: result.email } });
+        setLoading(false);
+        return;
+      }
       setError(result.error);
     }
+
     setLoading(false);
   };
 
@@ -83,7 +101,7 @@ const Login = () => {
     { key: 'uppercase', label: 'Contains uppercase letter' },
     { key: 'lowercase', label: 'Contains lowercase letter' },
     { key: 'number', label: 'Contains a number' },
-    { key: 'special', label: 'Contains special character (!@#$%^&*_)' },  // ✅ updated
+    { key: 'special', label: 'Contains special character (!@#$%^&*_)' },
   ];
 
   return (
@@ -239,6 +257,17 @@ const Login = () => {
                     </span>
                   </div>
                 ))}
+              </div>
+            )}
+
+            {isLogin && (
+              <div className="text-right mt-2">
+                <Link
+                  to="/forgot-password"
+                  className="text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 transition"
+                >
+                  Forgot password?
+                </Link>
               </div>
             )}
           </div>

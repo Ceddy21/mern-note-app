@@ -1,4 +1,3 @@
-// frontend/src/context/AuthContext.js
 import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api';
@@ -23,7 +22,13 @@ export const AuthProvider = ({ children }) => {
       navigate('/');
       return { success: true };
     } catch (err) {
-      return { success: false, error: err.response?.data?.message || 'Login failed' };
+      const errorData = err.response?.data || {};
+      return {
+        success: false,
+        error: errorData.message || 'Login failed',
+        needsVerification: errorData.needsVerification || false,
+        email: errorData.email || '',
+      };
     }
   };
 
@@ -31,43 +36,52 @@ export const AuthProvider = ({ children }) => {
   const signup = async (username, email, password) => {
     try {
       const response = await api.post('/auth/signup', { username, email, password });
-      const { token, user } = response.data;
-      localStorage.setItem('token', token);
-      setToken(token);
-      setUser(user);
-      api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-      navigate('/');
-      return { success: true };
+      // After signup, user is created but not verified
+      // Redirect to verification page
+      return {
+        success: true,
+        needsVerification: true,
+        email: response.data.email || email,
+        message: response.data.message,
+      };
     } catch (err) {
-      return { success: false, error: err.response?.data?.message || 'Signup failed' };
+      return {
+        success: false,
+        error: err.response?.data?.message || 'Signup failed',
+      };
     }
   };
 
   // ── Google Login ──
   const googleLogin = () => {
-    window.location.href = `${process.env.REACT_APP_API_URL}/auth/google`;
+    window.location.href = `${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/auth/google`;
   };
 
-const handleOAuthRedirect = async (token) => {
-  console.log('handleOAuthRedirect called with token');
-  localStorage.setItem('token', token);
-  setToken(token);
-  api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-  
-  try {
-    console.log('Fetching user...');
-    const response = await api.get('/auth/me');
-    console.log('User fetched:', response.data);
-    setUser(response.data);
-    navigate('/');
-  } catch (err) {
-    console.error('Error fetching user:', err);
-    localStorage.removeItem('token');
-    setToken(null);
-    setUser(null);
-    navigate('/login');
-  }
-};
+  // ── Handle OAuth Redirect ──
+  const handleOAuthRedirect = async (token) => {
+    console.log('✅ handleOAuthRedirect: Token received');
+    localStorage.setItem('token', token);
+    setToken(token);
+    api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+    
+    try {
+      console.log('👤 Fetching user after OAuth...');
+      const response = await api.get('/auth/me', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      console.log('✅ User fetched after OAuth:', response.data);
+      setUser(response.data);
+      navigate('/');
+    } catch (err) {
+      console.error('❌ Error fetching user after OAuth:', err.response?.data || err.message);
+      localStorage.removeItem('token');
+      setToken(null);
+      setUser(null);
+      navigate('/login');
+    }
+  };
 
   // ── Logout ──
   const logout = () => {
@@ -80,7 +94,7 @@ const handleOAuthRedirect = async (token) => {
 
   // ── Fetch User ──
   const fetchUser = useCallback(async () => {
-    console.log('fetchUser called, token:', token ? 'exists' : 'none');
+    console.log('🔍 fetchUser called, token:', token ? '✅ exists' : '❌ none');
     
     if (!token) {
       setLoading(false);
@@ -88,22 +102,28 @@ const handleOAuthRedirect = async (token) => {
     }
 
     try {
-      api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-      const response = await api.get('/auth/me');
-      console.log('User fetched:', response.data);
+      console.log('👤 Making API call to /auth/me');
+      const response = await api.get('/auth/me', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      console.log('✅ User fetched:', response.data);
       setUser(response.data);
     } catch (err) {
-      console.error(' Error fetching user:', err);
-      localStorage.removeItem('token');
-      setToken(null);
-      setUser(null);
-      delete api.defaults.headers.common['Authorization'];
+      console.error('❌ Error fetching user:', err.response?.data || err.message);
+      if (err.response?.status === 401) {
+        console.log('⚠️ 401 Unauthorized - clearing token');
+        localStorage.removeItem('token');
+        setToken(null);
+        setUser(null);
+        delete api.defaults.headers.common['Authorization'];
+      }
     } finally {
       setLoading(false);
     }
   }, [token]);
 
-  // ── Load user on mount ──
   useEffect(() => {
     fetchUser();
   }, [fetchUser]);

@@ -24,7 +24,7 @@ app.use(cors({
 // ── Increase general rate limit ──
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 500, // changed from 100 to 500
+  max: 500,
   message: 'Too many requests. Please try again later.',
 });
 
@@ -34,6 +34,13 @@ const authLimiter = rateLimit({
   max: 50, // changed from 5 to 50
   message: 'Too many login attempts. Please try again later.',
 });
+
+const forgotLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 3,
+  message: 'Too many password reset requests. Please try again later.',
+});
+app.use('/api/auth/forgot-password', forgotLimiter);
 
 app.use('/api/auth/login', authLimiter);
 

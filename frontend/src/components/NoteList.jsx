@@ -60,7 +60,7 @@ const NoteList = ({ notes, onNoteClick, onAddClick, loading }) => {
         {filteredNotes.length === 0 && (
           <div className="col-span-full text-center py-16 opacity-50">
             <FaSearch className="text-6xl mx-auto mb-4 text-gray-400 dark:text-gray-600" />
-            <p className="text-lg">
+            <p className="text-lg dark:text-gray-500">
               {notes.length === 0
                 ? 'No notes yet. Tap the + button to create one!'
                 : `No notes match "${searchTerm}"`}

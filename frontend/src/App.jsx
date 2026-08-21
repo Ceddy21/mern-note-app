@@ -8,6 +8,9 @@ import NoteEditor from './components/NoteEditor';
 import Login from './components/Login';
 import OAuthRedirect from './components/OAuthRedirect';
 import ProtectedRoute from './components/ProtectedRoute';
+import ForgotPassword from './components/ForgotPassword';
+import ResetPassword from './components/ResetPassword';
+import VerifyEmail from './components/VerifyEmail';
 import { useNotes } from './hooks/useNotes';
 
 const AppContent = () => {
@@ -108,7 +111,10 @@ function App() {
       <AuthProvider>
         <Routes>
           <Route path="/login" element={<Login />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/oauth-redirect" element={<OAuthRedirect />} />
+          <Route path="/verify-email" element={<VerifyEmail />} />
           <Route
             path="/"
             element={
