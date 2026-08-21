@@ -1,40 +1,15 @@
-// src/App.jsx
+// frontend/src/App.jsx
 import React, { useState } from 'react';
 import { Toaster, toast } from 'react-hot-toast';
 import { FaCheckCircle, FaPlus, FaTrash } from 'react-icons/fa';
 import Header from './components/Header';
 import NoteList from './components/NoteList';
 import NoteEditor from './components/NoteEditor';
+import { useNotes } from './hooks/useNotes';
 
 function App() {
-  const [notes, setNotes] = useState([
-    {
-      _id: '1',
-      title: 'Welcome to your notes!',
-      subject: 'Getting started',
-      body: 'This is your first note. Click on it to edit. You can also change colors and fonts!',
-      type: 'text',
-      color: '#dbeafe',
-      font: 'sans-serif',
-      createdAt: new Date().toISOString(),
-    },
-    {
-      _id: '2',
-      title: 'Shopping List',
-      subject: 'Groceries',
-      body: 'Milk, Eggs, Bread, Butter',
-      type: 'checkbox',
-      checklist: [
-        { text: 'Milk', checked: true },
-        { text: 'Eggs', checked: false },
-        { text: 'Bread', checked: true },
-        { text: 'Butter', checked: false },
-      ],
-      color: '#d1fae5',
-      font: 'sans-serif',
-      createdAt: new Date().toISOString(),
-    },
-  ]);
+  // ── Use the custom hook ──
+  const { notes, loading, addNote, editNote, removeNote } = useNotes();
 
   const [selectedNote, setSelectedNote] = useState(null);
   const [isEditorOpen, setIsEditorOpen] = useState(false);
@@ -51,53 +26,50 @@ function App() {
     document.body.style.overflow = 'auto';
   };
 
-  // ── Save Note (Create or Update) with Toast ──
-  const handleSave = (noteData) => {
-    if (selectedNote?._id) {
-      // Edit existing note
-      setNotes((prev) =>
-        prev.map((n) =>
-          n._id === selectedNote._id
-            ? { ...n, ...noteData, updatedAt: new Date().toISOString() }
-            : n
-        )
-      );
-      toast.success(
-        <div className="flex items-center gap-2">
-          <FaCheckCircle className="text-white" /> Note updated successfully!
-        </div>
-      );
-    } else {
-      // Create new note
-      const newNote = {
-        _id: Date.now().toString(),
-        ...noteData,
-        createdAt: new Date().toISOString(),
-      };
-      setNotes((prev) => [newNote, ...prev]);
-      toast.success(
-        <div className="flex items-center gap-2">
-          <FaPlus className="text-white" /> Note created successfully!
-        </div>
-      );
+  // ── Save Note (Create or Update) ──
+  const handleSave = async (noteData) => {
+    try {
+      if (selectedNote?._id) {
+        // Edit existing note
+        await editNote(selectedNote._id, noteData);
+        toast.success(
+          <div className="flex items-center gap-2">
+            <FaCheckCircle className="text-white" /> Note updated successfully!
+          </div>
+        );
+      } else {
+        // Create new note
+        await addNote(noteData);
+        toast.success(
+          <div className="flex items-center gap-2">
+            <FaPlus className="text-white" /> Note created successfully!
+          </div>
+        );
+      }
+      closeEditor();
+    } catch (err) {
+      toast.error('Failed to save note');
     }
-    closeEditor();
   };
 
-  // ── Delete Note with Toast ──
-  const handleDelete = (id) => {
-    setNotes((prev) => prev.filter((note) => note._id !== id));
-    closeEditor();
-    toast.success(
-      <div className="flex items-center gap-2">
-        <FaTrash className="text-white" /> Note deleted successfully!
-      </div>
-    );
+  // ── Delete Note ──
+  const handleDelete = async (id) => {
+    try {
+      await removeNote(id);
+      closeEditor();
+      toast.success(
+        <div className="flex items-center gap-2">
+          <FaTrash className="text-white" /> Note deleted successfully!
+        </div>
+      );
+    } catch (err) {
+      toast.error('Failed to delete note');
+    }
   };
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
-      {/* ── Toast Notifications Container ── */}
+      {/* Toast Notifications */}
       <Toaster
         position="top-right"
         toastOptions={{
@@ -135,7 +107,7 @@ function App() {
           notes={notes}
           onNoteClick={openEditor}
           onAddClick={() => openEditor(null)}
-          loading={false}
+          loading={loading}
         />
       )}
     </div>
