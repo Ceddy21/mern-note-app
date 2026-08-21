@@ -27,21 +27,33 @@ const generateToken = (userId) => {
   );
 };
 
-// ─── Email Transporter ───
+// ─── Email Transporter (Gmail - SSL Port 465) ───
 let transporter;
 try {
   transporter = nodemailer.createTransport({
     host: process.env.EMAIL_HOST || 'smtp.gmail.com',
-    port: parseInt(process.env.EMAIL_PORT) || 587,
-    secure: process.env.EMAIL_SECURE === 'true',
+    port: parseInt(process.env.EMAIL_PORT) || 465,
+    secure: true, // SSL (port 465)
     auth: {
       user: process.env.EMAIL_USER,
       pass: process.env.EMAIL_PASS,
     },
+    // ── Timeout settings for Render ──
+    connectionTimeout: 30000,      // 30 seconds
+    greetingTimeout: 30000,
+    socketTimeout: 60000,          // 60 seconds
+    // ── TLS settings ──
+    tls: {
+      rejectUnauthorized: false,
+      ciphers: 'SSLv3',
+    },
+    // ── Debug logging ──
+    debug: process.env.NODE_ENV === 'development',
+    logger: process.env.NODE_ENV === 'development',
   });
-  console.log('✅ Email transporter configured');
+  console.log('✅ Email transporter configured (Gmail SSL)');
 } catch (err) {
-  console.warn('⚠️ Email transporter not configured:', err.message);
+  console.warn('⚠️ Email transporter error:', err.message);
   transporter = null;
 }
 
@@ -112,43 +124,50 @@ router.post('/signup', async (req, res) => {
     await user.save();
     console.log('✅ Verification code generated for:', user.email);
 
-    // ── Send email in background ──
+    // ── Send email with retry logic ──
     if (transporter) {
-      console.log('📧 Sending verification email to:', user.email);
-      transporter.sendMail({
-        to: user.email,
-        from: `"Nota" <${process.env.EMAIL_FROM || 'noreply@nota.com'}>`,
-        subject: 'Verify Your Email - Nota',
-        html: `
-          <!DOCTYPE html>
-          <html>
-          <head>
-            <style>
-              body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-              .container { max-width: 500px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 10px; }
-              .code { font-size: 32px; letter-spacing: 4px; background: #f0f4ff; padding: 10px 20px; display: inline-block; border-radius: 5px; font-weight: bold; color: #3b82f6; }
-              .footer { margin-top: 20px; font-size: 12px; color: #999; }
-            </style>
-          </head>
-          <body>
-            <div class="container">
-              <h1>Welcome to Nota! 🎉</h1>
-              <p>Thanks for signing up. Please use the code below to verify your email address:</p>
-              <div style="text-align: center; margin: 30px 0;">
-                <span class="code">${code}</span>
+      let emailSent = false;
+      let attempts = 0;
+      const maxAttempts = 3;
+      
+      while (!emailSent && attempts < maxAttempts) {
+        attempts++;
+        try {
+          console.log(`📧 Attempt ${attempts} - Sending verification email to:`, user.email);
+          
+          const info = await transporter.sendMail({
+            to: user.email,
+            from: `"Nota" <${process.env.EMAIL_FROM || process.env.EMAIL_USER}>`,
+            subject: '🔐 Verify Your Nota Account',
+            text: `Your verification code is: ${code}\n\nThis code expires in 15 minutes.\n\nIf you didn't sign up, please ignore this email.\n\n- Nota Team`,
+            html: `
+              <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 10px;">
+                <h2 style="color: #3b82f6;">🔐 Verify Your Email</h2>
+                <p>Your verification code is:</p>
+                <div style="text-align: center; margin: 30px 0;">
+                  <span style="font-size: 32px; letter-spacing: 4px; background: #f0f4ff; padding: 10px 20px; border-radius: 5px; font-weight: bold; color: #3b82f6;">${code}</span>
+                </div>
+                <p>This code expires in <strong>15 minutes</strong>.</p>
+                <p>If you didn't sign up, please ignore this email.</p>
+                <hr style="border: none; border-top: 1px solid #e0e0e0; margin: 20px 0;" />
+                <p style="font-size: 12px; color: #999;">Nota - Your smart note-taking app</p>
               </div>
-              <p>This code will expire in <strong>15 minutes</strong>.</p>
-              <p>If you didn't sign up for Nota, please ignore this email.</p>
-              <div class="footer">
-                <p>Nota - Your smart note-taking app</p>
-              </div>
-            </div>
-          </body>
-          </html>
-        `,
-      })
-      .then(() => console.log('✅ Verification email sent to:', user.email))
-      .catch((err) => console.error('❌ Email send error:', err));
+            `,
+          });
+          
+          console.log('✅ Email sent successfully! Message ID:', info.messageId);
+          emailSent = true;
+          
+        } catch (emailErr) {
+          console.error(`❌ Email attempt ${attempts} failed:`, emailErr.message);
+          if (attempts >= maxAttempts) {
+            console.error('❌ All email attempts failed');
+          } else {
+            console.log(`⏳ Waiting 2 seconds before retry...`);
+            await new Promise(resolve => setTimeout(resolve, 2000));
+          }
+        }
+      }
     } else {
       console.warn('⚠️ Email not sent: transporter not configured');
     }
@@ -195,17 +214,43 @@ router.post('/send-verification', async (req, res) => {
     await user.save();
 
     if (transporter) {
-      transporter.sendMail({
-        to: user.email,
-        from: `"Nota" <${process.env.EMAIL_FROM || 'noreply@nota.com'}>`,
-        subject: 'Resend Verification Code',
-        html: `
-          <h1>Resend Verification Code</h1>
-          <p>Your new verification code is:</p>
-          <h2 style="font-size: 32px; letter-spacing: 4px; background: #f0f4ff; padding: 10px 20px; display: inline-block;">${code}</h2>
-          <p>This code expires in 15 minutes.</p>
-        `,
-      }).catch(err => console.error('❌ Email send error:', err));
+      let emailSent = false;
+      let attempts = 0;
+      const maxAttempts = 3;
+      
+      while (!emailSent && attempts < maxAttempts) {
+        attempts++;
+        try {
+          console.log(`📧 Resend attempt ${attempts} - Sending to:`, user.email);
+          const info = await transporter.sendMail({
+            to: user.email,
+            from: `"Nota" <${process.env.EMAIL_FROM || process.env.EMAIL_USER}>`,
+            subject: '🔐 Resend Verification Code',
+            text: `Your new verification code is: ${code}\n\nThis code expires in 15 minutes.\n\n- Nota Team`,
+            html: `
+              <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 10px;">
+                <h2 style="color: #3b82f6;">🔐 Resend Verification Code</h2>
+                <p>Your new verification code is:</p>
+                <div style="text-align: center; margin: 30px 0;">
+                  <span style="font-size: 32px; letter-spacing: 4px; background: #f0f4ff; padding: 10px 20px; border-radius: 5px; font-weight: bold; color: #3b82f6;">${code}</span>
+                </div>
+                <p>This code expires in <strong>15 minutes</strong>.</p>
+                <hr style="border: none; border-top: 1px solid #e0e0e0; margin: 20px 0;" />
+                <p style="font-size: 12px; color: #999;">Nota - Your smart note-taking app</p>
+              </div>
+            `,
+          });
+          console.log('✅ Resend email sent! Message ID:', info.messageId);
+          emailSent = true;
+        } catch (emailErr) {
+          console.error(`❌ Resend attempt ${attempts} failed:`, emailErr.message);
+          if (attempts >= maxAttempts) {
+            console.error('❌ All resend attempts failed');
+          } else {
+            await new Promise(resolve => setTimeout(resolve, 2000));
+          }
+        }
+      }
     }
 
     res.json({ message: 'New verification code sent to your email.' });
@@ -276,15 +321,23 @@ router.post('/forgot-password', async (req, res) => {
     if (transporter) {
       transporter.sendMail({
         to: user.email,
-        from: `"Nota" <${process.env.EMAIL_FROM || 'noreply@nota.com'}>`,
-        subject: 'Password Reset',
+        from: `"Nota" <${process.env.EMAIL_FROM || process.env.EMAIL_USER}>`,
+        subject: '🔑 Password Reset',
+        text: `You requested a password reset. Click the link below:\n\n${resetUrl}\n\nThis link expires in 1 hour.\n\nIf you didn't request this, please ignore this email.\n\n- Nota Team`,
         html: `
-          <h1>Password Reset</h1>
-          <p>You requested a password reset. Click the link below:</p>
-          <a href="${resetUrl}" style="display:inline-block; padding:10px 20px; background:#3b82f6; color:white; text-decoration:none; border-radius:5px;">Reset Password</a>
-          <p>This link expires in 1 hour.</p>
+          <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 10px;">
+            <h2 style="color: #3b82f6;">🔑 Password Reset</h2>
+            <p>You requested a password reset. Click the link below:</p>
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${resetUrl}" style="display:inline-block; padding:10px 30px; background:#3b82f6; color:white; text-decoration:none; border-radius:5px; font-weight:bold;">Reset Password</a>
+            </div>
+            <p>This link expires in <strong>1 hour</strong>.</p>
+            <p>If you didn't request this, please ignore this email.</p>
+            <hr style="border: none; border-top: 1px solid #e0e0e0; margin: 20px 0;" />
+            <p style="font-size: 12px; color: #999;">Nota - Your smart note-taking app</p>
+          </div>
         `,
-      }).catch(err => console.error('❌ Email send error:', err));
+      }).catch(err => console.error('❌ Forgot password email error:', err));
     }
 
     res.json({ message: 'If an account with that email exists, a reset link has been sent.' });

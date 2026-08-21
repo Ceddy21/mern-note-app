@@ -72,7 +72,7 @@ app.get('/api/test', (req, res) => {
   res.json({ message: 'Backend is running!' });
 });
 
-// ── Temporary Debug Route ──
+// ── Debug Route ──
 app.get('/api/debug/users', async (req, res) => {
   try {
     const User = require('./models/User');
