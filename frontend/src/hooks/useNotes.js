@@ -1,4 +1,3 @@
-// frontend/src/hooks/useNotes.js
 import { useState, useEffect, useCallback } from 'react';
 import { getNotes, createNote, updateNote, deleteNote } from '../api';
 
@@ -8,23 +7,21 @@ export const useNotes = () => {
   const [error, setError] = useState(null);
 
   const fetchNotes = useCallback(async () => {
-    console.log('1️⃣ fetchNotes called');
+    console.log('fetchNotes called');
     setLoading(true);
     try {
-      console.log('2️⃣ Calling getNotes...');
+      console.log('Calling getNotes...');
       const response = await getNotes();
-      console.log('3️⃣ Response:', response);
-      // Ensure we always set an array
+      console.log('Response:', response);
       const data = response.data || [];
-      console.log('4️⃣ Data:', data);
+      console.log('Data:', data);
       setNotes(data);
       setError(null);
     } catch (err) {
-      console.error('❌ Error:', err);
+      console.error('Error:', err);
       setError('Failed to fetch notes');
-      // In case of error, still set loading false
     } finally {
-      console.log('5️⃣ Setting loading to false');
+      console.log('Setting loading to false');
       setLoading(false);
     }
   }, []);

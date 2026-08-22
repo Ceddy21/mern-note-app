@@ -115,7 +115,6 @@ router.post('/signup', async (req, res) => {
     await user.save();
 
     try {
-      // ── Human-readable email content ──
       const htmlContent = `
         <!DOCTYPE html>
         <html>
@@ -218,7 +217,7 @@ router.post('/send-verification', async (req, res) => {
             body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
             .container { max-width: 550px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 10px; background: #f9fafc; }
             .header { text-align: center; padding-bottom: 10px; border-bottom: 2px solid #3b82f6; }
-            .header h1 { color: #3b82f6; margin: 0; }
+            .header img { max-width: 120px; height: auto; }
             .code-box { background: #ffffff; padding: 15px; border-radius: 8px; text-align: center; margin: 20px 0; border: 1px dashed #3b82f6; }
             .code { font-size: 36px; font-weight: bold; color: #1e293b; letter-spacing: 6px; }
             .footer { margin-top: 20px; font-size: 12px; color: #999; text-align: center; border-top: 1px solid #e0e0e0; padding-top: 15px; }
@@ -227,19 +226,20 @@ router.post('/send-verification', async (req, res) => {
         <body>
           <div class="container">
             <div class="header">
-              <h1>Nota</h1>
-              <p style="color: #6b7280;">Your smart note-taking companion</p>
+              <img src="https://res.cloudinary.com/sqlrnnth/image/upload/v1787311243/Nota_logo_nobg.png" alt="Nota Logo" />
+              <p style="color: #6b7280;">Your note taking companion</p>
             </div>
-            <p>Hello <strong>${user.username}</strong>,</p>
-            <p>You requested a new verification code for your Nota account.</p>
+            <p>Hello <strong>${username}</strong>,</p>
+            <p>Thanks for signing up for <strong>Nota</strong>! We're excited to help you stay organized.</p>
+            <p>To complete your registration, please use the verification code below:</p>
             <div class="code-box">
               <span class="code">${code}</span>
             </div>
-            <p>This code expires in <strong>15 minutes</strong>.</p>
-            <p>If you didn't request this, please ignore this email.</p>
+            <p>This code expires in <strong>15 minutes</strong>. If you didn't request this, you can safely ignore this email.</p>
+            <p>Once verified, you'll be able to create notes, set reminders, and sync across all your devices.</p>
             <div class="footer">
               <p>Nota – Your notes, everywhere.</p>
-              <p><a href="https://mern-note-app-brown.vercel.app/unsubscribe" style="color: #3b82f6;">Unsubscribe</a></p>
+              <p><a href="https://mern-note-app-brown.vercel.app/unsubscribe" style="color: #3b82f6;">Unsubscribe</a> (you won't receive marketing emails)</p>
             </div>
           </div>
         </body>

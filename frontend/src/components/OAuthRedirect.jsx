@@ -11,16 +11,15 @@ const OAuthRedirect = () => {
     const token = params.get('token');
     const error = params.get('error');
 
-    // ── Remove token/error from URL immediately ──
     if (token || error) {
       window.history.replaceState({}, document.title, '/');
     }
 
-    console.log('🔍 OAuthRedirect - Token:', token ? '✅ Found' : '❌ Not found');
-    console.log('🔍 OAuthRedirect - Error:', error || 'None');
+    console.log('OAuthRedirect - Token:', token ? 'Found' : 'Not found');
+    console.log('OAuthRedirect - Error:', error || 'None');
 
     if (error) {
-      console.log('❌ Error from Google:', error);
+      console.log('Error from Google:', error);
       navigate('/login?error=google_auth_failed');
       return;
     }

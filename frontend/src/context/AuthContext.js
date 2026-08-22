@@ -63,17 +63,17 @@ export const AuthProvider = ({ children }) => {
     api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
     
     try {
-      console.log('👤 Fetching user after OAuth...');
+      console.log('Fetching user after OAuth...');
       const response = await api.get('/auth/me', {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
       });
-      console.log('✅ User fetched after OAuth:', response.data);
+      console.log('User fetched after OAuth:', response.data);
       setUser(response.data);
       navigate('/');
     } catch (err) {
-      console.error('❌ Error fetching user after OAuth:', err.response?.data || err.message);
+      console.error('Error fetching user after OAuth:', err.response?.data || err.message);
       localStorage.removeItem('token');
       setToken(null);
       setUser(null);
@@ -92,7 +92,7 @@ export const AuthProvider = ({ children }) => {
 
   // ── Fetch User ──
   const fetchUser = useCallback(async () => {
-    console.log('🔍 fetchUser called, token:', token ? '✅ exists' : '❌ none');
+    console.log('fetchUser called, token:', token ? 'exists' : 'none');
     
     if (!token) {
       setLoading(false);
@@ -100,18 +100,18 @@ export const AuthProvider = ({ children }) => {
     }
 
     try {
-      console.log('👤 Making API call to /auth/me');
+      console.log('Making API call to /auth/me');
       const response = await api.get('/auth/me', {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
       });
-      console.log('✅ User fetched:', response.data);
+      console.log('User fetched:', response.data);
       setUser(response.data);
     } catch (err) {
-      console.error('❌ Error fetching user:', err.response?.data || err.message);
+      console.error('Error fetching user:', err.response?.data || err.message);
       if (err.response?.status === 401) {
-        console.log('⚠️ 401 Unauthorized - clearing token');
+        console.log('401 Unauthorized - clearing token');
         localStorage.removeItem('token');
         setToken(null);
         setUser(null);
@@ -122,23 +122,22 @@ export const AuthProvider = ({ children }) => {
     }
   }, [token]);
 
-  // ── Refresh User (fetch latest data) ──
   const refreshUser = async () => {
     if (!token) {
-      console.log('⚠️ No token, cannot refresh user');
+      console.log('No token, cannot refresh user');
       return;
     }
     try {
-      console.log('🔄 Refreshing user data...');
+      console.log('Refreshing user data...');
       const response = await api.get('/auth/me', {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
       });
-      console.log('✅ User refreshed:', response.data);
+      console.log('User refreshed:', response.data);
       setUser(response.data);
     } catch (err) {
-      console.error('❌ Failed to refresh user:', err.response?.data || err.message);
+      console.error('Failed to refresh user:', err.response?.data || err.message);
     }
   };
 

@@ -43,8 +43,6 @@ const Login = () => {
   });
 
   const LOGO_URL = 'https://res.cloudinary.com/sqlrnnth/image/upload/v1787311243/Nota_logo_nobg.png';
-
-  // ── Logo filter for dark mode ──
   const logoFilter = theme === 'dark' ? 'brightness(0) invert(1)' : 'none';
 
   const handleChange = (e) => {
