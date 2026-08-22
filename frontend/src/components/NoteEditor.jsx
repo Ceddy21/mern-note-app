@@ -271,16 +271,16 @@ const NoteEditor = ({ note, onSave, onDelete, onBack }) => {
             ))}
           </div>
 
-          {/* Font Picker */}
+          {/* ─── FONT PICKER (FIXED FOR DARK MODE) ─── */}
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-sm font-medium opacity-70 dark:text-white">Font:</span>
             <select
               value={font}
               onChange={(e) => setFont(e.target.value)}
-              className="bg-transparent border dark:text-white border-gray-300 dark:border-gray-600 rounded-lg px-2 py-1 text-xs sm:text-sm outline-none"
+              className="bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg px-2 py-1 text-xs sm:text-sm outline-none text-gray-800 dark:text-white shadow-sm"
             >
               {fonts.map((f) => (
-                <option key={f} value={f} style={{ fontFamily: f }}>
+                <option key={f} value={f} style={{ fontFamily: f }} className="bg-white dark:bg-gray-700 text-gray-800 dark:text-white">
                   {f}
                 </option>
               ))}

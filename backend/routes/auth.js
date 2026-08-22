@@ -8,7 +8,6 @@ const User = require('../models/User');
 const crypto = require('crypto');
 const { google } = require('googleapis');
 
-// ─── Gmail API Setup ───
 const oAuth2Client = new google.auth.OAuth2(
   process.env.GMAIL_CLIENT_ID,
   process.env.GMAIL_CLIENT_SECRET,
@@ -124,17 +123,27 @@ router.post('/signup', async (req, res) => {
             body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
             .container { max-width: 550px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 10px; background: #f9fafc; }
             .header { text-align: center; padding-bottom: 10px; border-bottom: 2px solid #3b82f6; }
-            .header img { max-width: 120px; height: auto; }
             .code-box { background: #ffffff; padding: 15px; border-radius: 8px; text-align: center; margin: 20px 0; border: 1px dashed #3b82f6; }
             .code { font-size: 36px; font-weight: bold; color: #1e293b; letter-spacing: 6px; }
             .footer { margin-top: 20px; font-size: 12px; color: #999; text-align: center; border-top: 1px solid #e0e0e0; padding-top: 15px; }
+            @media (prefers-color-scheme: dark) {
+              body { color: #ddd; background: #121212; }
+              .container { background: #1a1a2e; border-color: #333; }
+              .header { border-bottom-color: #3b82f6; }
+              .code-box { background: #2d2d44; border-color: #3b82f6; }
+              .code { color: #f0f0f0; }
+              .footer { color: #777; border-top-color: #333; }
+            }
           </style>
         </head>
         <body>
           <div class="container">
             <div class="header">
-              <img src="https://res.cloudinary.com/sqlrnnth/image/upload/v1787311243/Nota_logo_nobg.png" alt="Nota Logo" />
-              <p style="color: #6b7280;">Your smart note-taking companion</p>
+              <picture>
+                <source srcset="https://res.cloudinary.com/sqlrnnth/image/upload/e_colorize:100,co_white/v1787311243/Nota_logo_nobg.png" media="(prefers-color-scheme: dark)">
+                <img src="https://res.cloudinary.com/sqlrnnth/image/upload/v1787311243/Nota_logo_nobg.png" alt="Nota Logo" style="max-width:120px; height:auto;" />
+              </picture>
+              <p style="color: #6b7280;">Your simple note-taking companion</p>
             </div>
             <p>Hello <strong>${username}</strong>,</p>
             <p>Thanks for signing up for <strong>Nota</strong>! We're excited to help you stay organized.</p>
@@ -217,17 +226,27 @@ router.post('/send-verification', async (req, res) => {
             body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
             .container { max-width: 550px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 10px; background: #f9fafc; }
             .header { text-align: center; padding-bottom: 10px; border-bottom: 2px solid #3b82f6; }
-            .header img { max-width: 120px; height: auto; }
             .code-box { background: #ffffff; padding: 15px; border-radius: 8px; text-align: center; margin: 20px 0; border: 1px dashed #3b82f6; }
             .code { font-size: 36px; font-weight: bold; color: #1e293b; letter-spacing: 6px; }
             .footer { margin-top: 20px; font-size: 12px; color: #999; text-align: center; border-top: 1px solid #e0e0e0; padding-top: 15px; }
+            @media (prefers-color-scheme: dark) {
+              body { color: #ddd; background: #121212; }
+              .container { background: #1a1a2e; border-color: #333; }
+              .header { border-bottom-color: #3b82f6; }
+              .code-box { background: #2d2d44; border-color: #3b82f6; }
+              .code { color: #f0f0f0; }
+              .footer { color: #777; border-top-color: #333; }
+            }
           </style>
         </head>
         <body>
           <div class="container">
             <div class="header">
-              <img src="https://res.cloudinary.com/sqlrnnth/image/upload/v1787311243/Nota_logo_nobg.png" alt="Nota Logo" />
-              <p style="color: #6b7280;">Your smart note-taking companion</p>
+              <picture>
+                <source srcset="https://res.cloudinary.com/sqlrnnth/image/upload/e_colorize:100,co_white/v1787311243/Nota_logo_nobg.png" media="(prefers-color-scheme: dark)">
+                <img src="https://res.cloudinary.com/sqlrnnth/image/upload/v1787311243/Nota_logo_nobg.png" alt="Nota Logo" style="max-width:120px; height:auto;" />
+              </picture>
+              <p style="color: #6b7280;">Your simple note-taking companion</p>
             </div>
             <p>Hello <strong>${user.username}</strong>,</p>
             <p>You requested a new verification code for your Nota account.</p>
@@ -317,16 +336,24 @@ router.post('/forgot-password', async (req, res) => {
             body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
             .container { max-width: 550px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 10px; background: #f9fafc; }
             .header { text-align: center; padding-bottom: 10px; border-bottom: 2px solid #3b82f6; }
-            .header img { max-width: 120px; height: auto; }
             .button { display: inline-block; padding: 12px 24px; background: #3b82f6; color: white; text-decoration: none; border-radius: 5px; font-weight: bold; }
             .footer { margin-top: 20px; font-size: 12px; color: #999; text-align: center; border-top: 1px solid #e0e0e0; padding-top: 15px; }
+            @media (prefers-color-scheme: dark) {
+              body { color: #ddd; background: #121212; }
+              .container { background: #1a1a2e; border-color: #333; }
+              .header { border-bottom-color: #3b82f6; }
+              .footer { color: #777; border-top-color: #333; }
+            }
           </style>
         </head>
         <body>
           <div class="container">
             <div class="header">
-              <img src="https://res.cloudinary.com/sqlrnnth/image/upload/v1787311243/Nota_logo_nobg.png" alt="Nota Logo" />
-              <p style="color: #6b7280;">Your smart note-taking companion</p>
+              <picture>
+                <source srcset="https://res.cloudinary.com/sqlrnnth/image/upload/e_colorize:100,co_white/v1787311243/Nota_logo_nobg.png" media="(prefers-color-scheme: dark)">
+                <img src="https://res.cloudinary.com/sqlrnnth/image/upload/v1787311243/Nota_logo_nobg.png" alt="Nota Logo" style="max-width:120px; height:auto;" />
+              </picture>
+              <p style="color: #6b7280;">Your simple note-taking companion</p>
             </div>
             <p>Hello <strong>${user.username}</strong>,</p>
             <p>We received a request to reset your password. Click the button below to create a new one:</p>
@@ -480,7 +507,6 @@ router.get('/me', async (req, res) => {
   }
 });
 
-// ─── Test Email Route ───
 router.post('/test-email', async (req, res) => {
   const { to } = req.body;
   if (!to) return res.status(400).json({ message: 'Missing "to" email' });
@@ -494,10 +520,19 @@ router.post('/test-email', async (req, res) => {
           body { font-family: Arial, sans-serif; }
           .container { max-width: 500px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px; }
           h1 { color: #3b82f6; }
+          @media (prefers-color-scheme: dark) {
+            body { background: #121212; color: #ddd; }
+            .container { background: #1a1a2e; border-color: #333; }
+            h1 { color: #60a5fa; }
+          }
         </style>
       </head>
       <body>
         <div class="container">
+          <picture>
+            <source srcset="https://res.cloudinary.com/sqlrnnth/image/upload/e_colorize:100,co_white/v1787311243/Nota_logo_nobg.png" media="(prefers-color-scheme: dark)">
+            <img src="https://res.cloudinary.com/sqlrnnth/image/upload/v1787311243/Nota_logo_nobg.png" alt="Nota Logo" style="max-width:80px; height:auto;" />
+          </picture>
           <h1>Email Test Successful</h1>
           <p>Your Gmail API is working perfectly.</p>
           <p>– The Nota Team</p>
