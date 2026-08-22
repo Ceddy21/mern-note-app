@@ -169,7 +169,6 @@ npm install
 ```env
 PORT=5000
 MONGODB_URI=mongodb://<username>:<password>@cluster.xxxxx.mongodb.net:27017/noteapp?retryWrites=true&w=majority
-JWT_SECRET=8fK!2mP9@xLq7$NwV4!zR1&bT6yHj3*DsE5uC8
 JWT_SECRET=YourSuperSecretKey123!@#$%
 
 # Google OAuth
