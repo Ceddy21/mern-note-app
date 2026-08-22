@@ -168,7 +168,7 @@ npm install
 
 ```env
 PORT=5000
-MONGODB_URI=mongodb://<username>:<db_password>@ac-bdxmhvu-shard-00-00.xfyzneh.mongodb.net:27017,ac-bdxmhvu-shard-00-01.xfyzneh.mongodb.net:27017,ac-bdxmhvu-shard-00-02.xfyzneh.mongodb.net:27017/?ssl=true&replicaSet=atlas-1uii7h-shard-0&authSource=admin&appName=notes-app
+MONGODB_URI=mongodb://<username>:<password>@cluster.xxxxx.mongodb.net:27017/noteapp?retryWrites=true&w=majority
 JWT_SECRET=8fK!2mP9@xLq7$NwV4!zR1&bT6yHj3*DsE5uC8
 JWT_SECRET=YourSuperSecretKey123!@#$%
 
