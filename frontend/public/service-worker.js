@@ -10,7 +10,6 @@ self.addEventListener('install', (event) => {
     caches.open(CACHE_NAME)
       .then((cache) => {
         console.log('✅ Cache opened');
-        // Cache each URL individually, ignore failures
         const cachePromises = urlsToCache.map(async (url) => {
           try {
             const response = await fetch(url);
@@ -28,7 +27,6 @@ self.addEventListener('install', (event) => {
       })
       .then(() => {
         console.log('✅ All cache attempts complete');
-        // Force the waiting service worker to become active
         return self.skipWaiting();
       })
       .catch((err) => {
@@ -49,22 +47,28 @@ self.addEventListener('activate', (event) => {
         })
       );
     }).then(() => {
-      // Take control of all clients immediately
       return self.clients.claim();
     })
   );
 });
 
+// ─── FIXED FETCH HANDLER ───
 self.addEventListener('fetch', (event) => {
   event.respondWith(
     caches.match(event.request)
       .then((response) => {
+        // If cached, return it
         if (response) {
           return response;
         }
-        // For non-cached requests, try to fetch and cache dynamically
-        return fetch(event.request).catch(() => {
-          // Fallback to offline page if needed (optional)
+        // Otherwise try to fetch from network
+        return fetch(event.request);
+      })
+      .catch(() => {
+        // ── Always return a Response – even if everything fails ──
+        return new Response('Offline', {
+          status: 503,
+          statusText: 'Service Unavailable'
         });
       })
   );
