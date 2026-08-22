@@ -22,7 +22,7 @@ checklists, and cloud synchronization.
 
 ┌───────────────────────┬──────────────────────────────────────────────────────┐
 │ FEATURE               │ DESCRIPTION                                          │
-├───────────────────────┼───────────────────────────────────────────────────── ┤
+├───────────────────────┼──────────────────────────────────────────────────────┤
 │ 🔐 Authentication     │ Email/Password + Google OAuth 2.0 with JWT          │
 │ 📝 CRUD Operations    │ Create, Read, Update, Delete notes                  │
 │ ☑️ Checklist Support  │ Convert any note to a checklist with real-time togg │
@@ -31,51 +31,51 @@ checklists, and cloud synchronization.
 │ 📧 Email Verification │ 6-digit code verification via Gmail API             │
 │ 🔄 Password Recovery  │ Secure password reset via email                     │
 │ 👤 User Profile       │ Update username, password, and avatar               │
-│ 🖼️ Avatar Upload     │ Cloudinary integration for profile pictures          │
-│ 📱 Responsive         │ Optimized for mobile, tablet, and desktop            │
+│ 🖼️ Avatar Upload     │ Cloudinary integration for profile pictures         │
+│ 📱 Responsive         │ Optimized for mobile, tablet, and desktop           │
 │ 🔒 Security           │ Rate limiting, JWT, and secure password hashing     │
-└───────────────────────┴─────────────────────────────────────────────────────┘
+└───────────────────────┴──────────────────────────────────────────────────────┘
 
 ================================================================================
 
 ## 🛠️ TECH STACK
 
-┌──────────────────────────────────────────────────────────────────────────────┐
+┌───────────────────────────────────────────────────────────────────────────────┐
 │ FRONTEND                                                                     │
 ├───────────────────────┬──────────────────────────────────────────────────────┤
 │ Technology            │ Purpose                                              │
 ├───────────────────────┼──────────────────────────────────────────────────────┤
-│ React 18              │ UI framework                                         │
-│ Tailwind CSS          │ Styling and responsive design                        │
-│ React Router v6       │ Client-side routing                                  │
-│ Axios                 │ HTTP client for API calls                            │
-│ React Icons           │ Icon library                                         │
-│ React Hot Toast       │ Toast notifications                                  │
+│ React 18              │ UI framework                                        │
+│ Tailwind CSS          │ Styling and responsive design                       │
+│ React Router v6       │ Client-side routing                                 │
+│ Axios                 │ HTTP client for API calls                           │
+│ React Icons           │ Icon library                                        │
+│ React Hot Toast       │ Toast notifications                                 │
 └───────────────────────┴──────────────────────────────────────────────────────┘
 
-┌──────────────────────────────────────────────────────────────────────────────┐
+┌───────────────────────────────────────────────────────────────────────────────┐
 │ BACKEND                                                                      │
 ├───────────────────────┬──────────────────────────────────────────────────────┤
 │ Technology            │ Purpose                                              │
 ├───────────────────────┼──────────────────────────────────────────────────────┤
-│ Node.js               │ Runtime environment                                  │
-│ Express.js            │ Web framework                                        │
-│ MongoDB Atlas         │ Cloud database                                       │
-│ Mongoose              │ ODM for MongoDB                                      │
-│ JWT                   │ Authentication tokens                                │
-│ Passport.js           │ Google OAuth 2.0                                     │
-│ Gmail API             │ Email sending                                        │
-│ Cloudinary            │ Image upload and storage                             │
+│ Node.js               │ Runtime environment                                 │
+│ Express.js            │ Web framework                                       │
+│ MongoDB Atlas         │ Cloud database                                      │
+│ Mongoose              │ ODM for MongoDB                                     │
+│ JWT                   │ Authentication tokens                               │
+│ Passport.js           │ Google OAuth 2.0                                    │
+│ Gmail API             │ Email sending                                       │
+│ Cloudinary            │ Image upload and storage                            │
 └───────────────────────┴──────────────────────────────────────────────────────┘
 
-┌──────────────────────────────────────────────────────────────────────────────┐
+┌───────────────────────────────────────────────────────────────────────────────┐
 │ DEPLOYMENT                                                                   │
 ├───────────────────────┬──────────────────────────────────────────────────────┤
 │ Service               │ Purpose                                              │
 ├───────────────────────┼──────────────────────────────────────────────────────┤
-│ Vercel                │ Frontend hosting                                     │
-│ Render                │ Backend hosting                                      │
-│ MongoDB Atlas         │ Database hosting                                     │
+│ Vercel                │ Frontend hosting                                    │
+│ Render                │ Backend hosting                                     │
+│ MongoDB Atlas         │ Database hosting                                    │
 └───────────────────────┴──────────────────────────────────────────────────────┘
 
 ================================================================================
@@ -131,18 +131,18 @@ mern-note-app/
 ## 🚀 GETTING STARTED
 
 ┌───────────────────────────────────────────────────────────────────────────────┐
-│ PREREQUISITES                                                                 │
-├───────────────────────┬────────────────────────────────────────────────────── ┤
-│ Tool                  │ Version                                               │
-├───────────────────────┼────────────────────────────────────────────────────── ┤
-│ Node.js               │ v18.x or higher                                       │
-│ npm                   │ v9.x or higher                                        │
-│ MongoDB Atlas         │ Cloud account                                         │
-│ Git                   │ Latest version                                        │
-└───────────────────────┴────────────────────────────────────────────────────── ┘
+│ PREREQUISITES                                                                │
+├───────────────────────┬──────────────────────────────────────────────────────┤
+│ Tool                  │ Version                                              │
+├───────────────────────┼──────────────────────────────────────────────────────┤
+│ Node.js               │ v18.x or higher                                     │
+│ npm                   │ v9.x or higher                                      │
+│ MongoDB Atlas         │ Cloud account                                       │
+│ Git                   │ Latest version                                      │
+└───────────────────────┴──────────────────────────────────────────────────────┘
 
 ┌───────────────────────────────────────────────────────────────────────────────┐
-│ INSTALLATION                                                                  │
+│ INSTALLATION                                                                 │
 └───────────────────────────────────────────────────────────────────────────────┘
 
 **1️⃣ CLONE THE REPOSITORY**
@@ -163,40 +163,40 @@ mern-note-app/
 **4️⃣ SET UP ENVIRONMENT VARIABLES**
 
    ┌───────────────────────────────────────────────────────────────────────────┐
-   │ BACKEND (.env) – Create backend/.env                                      │
+   │ BACKEND (.env) – Create backend/.env                                    │
    ├───────────────────────────────────────────────────────────────────────────┤
-   │ PORT=5000                                                                 │
-   │ MONGODB_URI=mongodb+srv://<username>:<password>@cluster.xxxxx.mongodb.    │
-   │ net/noteapp?retryWrites=true&w=majority                                   │
-   │ JWT_SECRET=YourSuperSecretKey123!@#$%                                     │
+   │ PORT=5000                                                                │
+   │ MONGODB_URI=mongodb+srv://<username>:<password>@cluster.xxxxx.mongodb.   │
+   │ net/noteapp?retryWrites=true&w=majority                                  │
+   │ JWT_SECRET=YourSuperSecretKey123!@#$%                                    │
    │                                                                           │
-   │ # Google OAuth                                                            │
-   │ GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com                │
-   │ GOOGLE_CLIENT_SECRET=your-client-secret                                   │
-   │ GOOGLE_CALLBACK_URL=http://localhost:5000/api/auth/google/callback        │
+   │ # Google OAuth                                                           │
+   │ GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com               │
+   │ GOOGLE_CLIENT_SECRET=your-client-secret                                  │
+   │ GOOGLE_CALLBACK_URL=http://localhost:5000/api/auth/google/callback       │
    │                                                                           │
-   │ # Gmail API                                                               │
-   │ GMAIL_CLIENT_ID=your-gmail-client-id.apps.googleusercontent.com           │
-   │ GMAIL_CLIENT_SECRET=your-gmail-client-secret                              │
-   │ GMAIL_REFRESH_TOKEN=your-refresh-token                                    │
+   │ # Gmail API                                                              │
+   │ GMAIL_CLIENT_ID=your-gmail-client-id.apps.googleusercontent.com          │
+   │ GMAIL_CLIENT_SECRET=your-gmail-client-secret                             │
+   │ GMAIL_REFRESH_TOKEN=your-refresh-token                                   │
    │                                                                           │
-   │ # Cloudinary                                                              │
-   │ CLOUDINARY_CLOUD_NAME=your-cloud-name                                     │
-   │ CLOUDINARY_API_KEY=your-api-key                                           │
-   │ CLOUDINARY_API_SECRET=your-api-secret                                     │
+   │ # Cloudinary                                                             │
+   │ CLOUDINARY_CLOUD_NAME=your-cloud-name                                    │
+   │ CLOUDINARY_API_KEY=your-api-key                                          │
+   │ CLOUDINARY_API_SECRET=your-api-secret                                    │
    │                                                                           │
-   │ # Frontend URL                                                            │
-   │ FRONTEND_URL=http://localhost:3000                                        │
+   │ # Frontend URL                                                           │
+   │ FRONTEND_URL=http://localhost:3000                                       │
    │                                                                           │
-   │ # Email (for Gmail API fallback)                                          │
-   │ EMAIL_FROM=your-email@gmail.com                                           │
+   │ # Email (for Gmail API fallback)                                         │
+   │ EMAIL_FROM=your-email@gmail.com                                          │
    └───────────────────────────────────────────────────────────────────────────┘
 
    ┌───────────────────────────────────────────────────────────────────────────┐
-   │ FRONTEND (.env) – Create frontend/.env                                    │
+   │ FRONTEND (.env) – Create frontend/.env                                   │
    ├───────────────────────────────────────────────────────────────────────────┤
-   │ REACT_APP_API_URL=http://localhost:5000/api                               │
-   │ REACT_APP_APP_NAME=Nota                                                   │
+   │ REACT_APP_API_URL=http://localhost:5000/api                              │
+   │ REACT_APP_APP_NAME=Nota                                                  │
    └───────────────────────────────────────────────────────────────────────────┘
 
 **5️⃣ START DEVELOPMENT SERVERS**
@@ -210,7 +210,7 @@ mern-note-app/
    npm start
 
    ┌───────────────────────────────────────────────────────────────────────────┐
-   │ Your app is now running:                                                  │
+   │ Your app is now running:                                                 │
    │                                                                           │
    │ 🖥️ Frontend: http://localhost:3000                                       │
    │ 🖥️ Backend:  http://localhost:5000                                       │
@@ -221,29 +221,29 @@ mern-note-app/
 ## 📧 EMAIL SETUP (GMAIL API)
 
 ┌───────────────────────────────────────────────────────────────────────────────┐
-│ STEP 1: ENABLE GMAIL API                                                      │
+│ STEP 1: ENABLE GMAIL API                                                     │
 ├───────────────────────────────────────────────────────────────────────────────┤
-│ 1. Go to https://console.cloud.google.com                                     │
-│ 2. Select your project → APIs & Services → Library                            │
-│ 3. Search for "Gmail API" → Click Enable                                      │
+│ 1. Go to https://console.cloud.google.com                                    │
+│ 2. Select your project → APIs & Services → Library                          │
+│ 3. Search for "Gmail API" → Click Enable                                    │
 └───────────────────────────────────────────────────────────────────────────────┘
 
 ┌───────────────────────────────────────────────────────────────────────────────┐
-│ STEP 2: CREATE OAUTH CREDENTIALS                                              │
+│ STEP 2: CREATE OAUTH CREDENTIALS                                             │
 ├───────────────────────────────────────────────────────────────────────────────┤
-│ 1. Go to APIs & Services → Credentials                                        │
-│ 2. Click + CREATE CREDENTIALS → OAuth client ID                               │
-│ 3. Application type: Desktop app                                              │
-│ 4. Download credentials.json                                                  │
+│ 1. Go to APIs & Services → Credentials                                       │
+│ 2. Click + CREATE CREDENTIALS → OAuth client ID                             │
+│ 3. Application type: Desktop app                                            │
+│ 4. Download credentials.json                                                │
 └───────────────────────────────────────────────────────────────────────────────┘
 
 ┌───────────────────────────────────────────────────────────────────────────────┐
-│ STEP 3: GET REFRESH TOKEN                                                     │
+│ STEP 3: GET REFRESH TOKEN                                                    │
 ├───────────────────────────────────────────────────────────────────────────────┤
-│ cd backend                                                                    │
-│ node get-token.js                                                             │
+│ cd backend                                                                   │
+│ node get-token.js                                                            │
 │                                                                               │
-│ Follow the prompts to authorize and copy the refresh token.                   │
+│ Follow the prompts to authorize and copy the refresh token.                 │
 └───────────────────────────────────────────────────────────────────────────────┘
 
 ================================================================================
@@ -251,18 +251,18 @@ mern-note-app/
 ## 🔐 GOOGLE OAUTH SETUP
 
 ┌───────────────────────────────────────────────────────────────────────────────┐
-│ 1. Go to https://console.cloud.google.com                                     │
-│ 2. APIs & Services → Credentials → OAuth client ID                            │
-│ 3. Application type: Web application                                          │
-│ 4. Authorized redirect URIs:                                                  │
+│ 1. Go to https://console.cloud.google.com                                    │
+│ 2. APIs & Services → Credentials → OAuth client ID                          │
+│ 3. Application type: Web application                                        │
+│ 4. Authorized redirect URIs:                                                │
 │                                                                               │
-│    http://localhost:5000/api/auth/google/callback                             │
-│    https://nota-backend-6pm4.onrender.com/api/auth/google/callback            │
+│    http://localhost:5000/api/auth/google/callback                           │
+│    https://nota-backend-6pm4.onrender.com/api/auth/google/callback          │
 │                                                                               │
-│ 5. Authorized JavaScript origins:                                             │
+│ 5. Authorized JavaScript origins:                                            │
 │                                                                               │
-│    http://localhost:3000                                                      │
-│    https://mern-note-app-brown.vercel.app                                     │
+│    http://localhost:3000                                                    │
+│    https://mern-note-app-brown.vercel.app                                   │
 └───────────────────────────────────────────────────────────────────────────────┘
 
 ================================================================================
@@ -270,12 +270,12 @@ mern-note-app/
 ## 🖼️ CLOUDINARY SETUP
 
 ┌───────────────────────────────────────────────────────────────────────────────┐
-│ 1. Sign up at https://cloudinary.com                                          │
-│ 2. Get your credentials from the dashboard:                                   │
+│ 1. Sign up at https://cloudinary.com                                         │
+│ 2. Get your credentials from the dashboard:                                  │
 │                                                                               │
-│    - CLOUDINARY_CLOUD_NAME                                                    │
-│    - CLOUDINARY_API_KEY                                                       │
-│    - CLOUDINARY_API_SECRET                                                    │
+│    - CLOUDINARY_CLOUD_NAME                                                  │
+│    - CLOUDINARY_API_KEY                                                     │
+│    - CLOUDINARY_API_SECRET                                                  │
 └───────────────────────────────────────────────────────────────────────────────┘
 
 ================================================================================
@@ -283,29 +283,29 @@ mern-note-app/
 ## 🚢 DEPLOYMENT
 
 ┌───────────────────────────────────────────────────────────────────────────────┐
-│ BACKEND (RENDER)                                                              │
+│ BACKEND (RENDER)                                                             │
 ├───────────────────────────────────────────────────────────────────────────────┤
-│ 1. Push code to GitHub                                                        │
-│ 2. Go to https://render.com                                                   │
-│ 3. New+ → Web Service → Connect GitHub repo                                   │
-│ 4. Root Directory: backend                                                    │
-│ 5. Build Command: npm install                                                 │
-│ 6. Start Command: npm start                                                   │
-│ 7. Add environment variables (same as .env)                                   │
+│ 1. Push code to GitHub                                                       │
+│ 2. Go to https://render.com                                                  │
+│ 3. New+ → Web Service → Connect GitHub repo                                 │
+│ 4. Root Directory: backend                                                  │
+│ 5. Build Command: npm install                                               │
+│ 6. Start Command: npm start                                                 │
+│ 7. Add environment variables (same as .env)                                 │
 └───────────────────────────────────────────────────────────────────────────────┘
 
 ┌───────────────────────────────────────────────────────────────────────────────┐
-│ FRONTEND (VERCEL)                                                             │
+│ FRONTEND (VERCEL)                                                            │
 ├───────────────────────────────────────────────────────────────────────────────┤
-│ 1. Go to https://vercel.com                                                   │
-│ 2. Add New → Project → Import GitHub repo                                     │ 
-│ 3. Root Directory: frontend                                                   │
-│ 4. Build Command: npm run build                                               │
-│ 5. Output Directory: build                                                    │
-│ 6. Add environment variables:                                                 │
+│ 1. Go to https://vercel.com                                                  │
+│ 2. Add New → Project → Import GitHub repo                                   │
+│ 3. Root Directory: frontend                                                 │
+│ 4. Build Command: npm run build                                             │
+│ 5. Output Directory: build                                                  │
+│ 6. Add environment variables:                                               │
 │                                                                               │
-│    REACT_APP_API_URL=https://your-backend-url.onrender.com/api                │
-│    REACT_APP_APP_NAME=Nota                                                    │
+│    REACT_APP_API_URL=https://your-backend-url.onrender.com/api              │
+│    REACT_APP_APP_NAME=Nota                                                  │
 └───────────────────────────────────────────────────────────────────────────────┘
 
 ================================================================================
@@ -313,26 +313,26 @@ mern-note-app/
 ## 🧪 TESTING
 
 ┌───────────────────────────────────────────────────────────────────────────────┐
-│ MANUAL SIGNUP FLOW                                                            │
+│ MANUAL SIGNUP FLOW                                                           │
 ├───────────────────────────────────────────────────────────────────────────────┤
-│ 1. Go to /login → Click "Sign Up"                                             │
-│ 2. Fill in username, email, password                                          │
-│ 3. You'll be redirected to /verify-email                                      │
-│ 4. Check your email for the 6-digit code                                      │
-│ 5. Enter the code → Email verified ✓                                          │
-│ 6. Login with your credentials                                                │
+│ 1. Go to /login → Click "Sign Up"                                           │
+│ 2. Fill in username, email, password                                        │
+│ 3. You'll be redirected to /verify-email                                    │
+│ 4. Check your email for the 6-digit code                                    │
+│ 5. Enter the code → Email verified ✓                                        │
+│ 6. Login with your credentials                                              │
 └───────────────────────────────────────────────────────────────────────────────┘
 
 ┌───────────────────────────────────────────────────────────────────────────────┐
-│ API TESTING WITH CURL                                                         │
+│ API TESTING WITH CURL                                                        │
 ├───────────────────────────────────────────────────────────────────────────────┤
-│ # Test email sending                                                          │
-│ curl -X POST https://nota-backend-6pm4.onrender.com/api/auth/test-email \     │
-│   -H "Content-Type: application/json" \                                       │
-│   -d '{"to": "your-email@gmail.com"}'                                         │
-│                                                                               │
-│ # Test Google login                                                           │
-│ curl -X GET https://nota-backend-6pm4.onrender.com/api/auth/google            │
+│ # Test email sending                                                         │
+│ curl -X POST https://nota-backend-6pm4.onrender.com/api/auth/test-email \    │
+│   -H "Content-Type: application/json" \                                     │
+│   -d '{"to": "your-email@gmail.com"}'                                       │
+│                                                                              │
+│ # Test Google login                                                          │
+│ curl -X GET https://nota-backend-6pm4.onrender.com/api/auth/google           │
 └───────────────────────────────────────────────────────────────────────────────┘
 
 ================================================================================
@@ -375,7 +375,7 @@ mern-note-app/
 │ Helmet                    │ Security headers                                 │
 │ X-Forwarded-For           │ Trust proxy enabled                              │
 │ Input Validation          │ Mongoose schema validation                       │
-│ Password Strength         │ 8+ chars, uppercase, lowercase, number,          │
+│ Password Strength         │ 8+ chars, uppercase, lowercase, number,         │
 │                           │ special character                                │
 └───────────────────────────┴──────────────────────────────────────────────────┘
 
@@ -417,6 +417,6 @@ mern-note-app/
 
 ================================================================================
 
-                       Built with using the MERN Stack
+                       Built with ❤️ using the MERN Stack
 
 ================================================================================
