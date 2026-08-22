@@ -19,12 +19,10 @@ oAuth2Client.setCredentials({
   refresh_token: process.env.GMAIL_REFRESH_TOKEN,
 });
 
-// ─── Email sending function ───
-const sendEmail = async (to, subject, htmlContent) => {
+const sendEmail = async (to, subject, htmlContent, textContent = '') => {
   try {
     const gmail = google.gmail({ version: 'v1', auth: oAuth2Client });
-    
-    const messageParts = [
+    const emailParts = [
       `From: "Nota" <${process.env.EMAIL_FROM}>`,
       `To: ${to}`,
       `Subject: ${subject}`,
@@ -34,7 +32,7 @@ const sendEmail = async (to, subject, htmlContent) => {
       htmlContent,
     ];
     
-    const message = messageParts.join('\r\n');
+    const message = emailParts.join('\r\n');
     const encodedMessage = Buffer.from(message)
       .toString('base64')
       .replace(/\+/g, '-')
@@ -48,10 +46,10 @@ const sendEmail = async (to, subject, htmlContent) => {
       },
     });
 
-    console.log('✅ Email sent via Gmail API:', response.data.id);
+    console.log('Email sent via Gmail API:', response.data.id);
     return response.data;
   } catch (err) {
-    console.error('❌ Gmail API error:', err);
+    console.error('Gmail API error:', err);
     throw err;
   }
 };
@@ -86,7 +84,7 @@ const checkCooldown = (user) => {
 
 // ─── SIGNUP ───
 router.post('/signup', async (req, res) => {
-  console.log('📥 Signup request:', { email: req.body.email, username: req.body.username });
+  console.log('Signup request:', { email: req.body.email, username: req.body.username });
   try {
     const { username, email, password } = req.body;
     if (!username || !email || !password) {
@@ -117,21 +115,70 @@ router.post('/signup', async (req, res) => {
     await user.save();
 
     try {
-      await sendEmail(
-        user.email,
-        '🔐 Verify Your Account',
-        `<h2>Your code: <strong>${code}</strong></h2><p>Valid for 15 minutes.</p>`
-      );
+      // ── Human-readable email content ──
+      const htmlContent = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="UTF-8">
+          <style>
+            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+            .container { max-width: 550px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 10px; background: #f9fafc; }
+            .header { text-align: center; padding-bottom: 10px; border-bottom: 2px solid #3b82f6; }
+            .header h1 { color: #3b82f6; margin: 0; }
+            .code-box { background: #ffffff; padding: 15px; border-radius: 8px; text-align: center; margin: 20px 0; border: 1px dashed #3b82f6; }
+            .code { font-size: 36px; font-weight: bold; color: #1e293b; letter-spacing: 6px; }
+            .footer { margin-top: 20px; font-size: 12px; color: #999; text-align: center; border-top: 1px solid #e0e0e0; padding-top: 15px; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1>Nota</h1>
+              <p style="color: #6b7280;">Your smart note-taking companion</p>
+            </div>
+            <p>Hello <strong>${username}</strong>,</p>
+            <p>Thanks for signing up for <strong>Nota</strong>! We're excited to help you stay organized.</p>
+            <p>To complete your registration, please use the verification code below:</p>
+            <div class="code-box">
+              <span class="code">${code}</span>
+            </div>
+            <p>This code expires in <strong>15 minutes</strong>. If you didn't request this, you can safely ignore this email.</p>
+            <p>Once verified, you'll be able to create notes, set reminders, and sync across all your devices.</p>
+            <div class="footer">
+              <p>Nota – Your notes, everywhere.</p>
+              <p><a href="https://mern-note-app-brown.vercel.app/unsubscribe" style="color: #3b82f6;">Unsubscribe</a> (you won't receive marketing emails)</p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `;
+      const textContent = `
+        Nota – Verify Your Email
+
+        Hello ${username},
+
+        Thanks for signing up for Nota! We're excited to help you stay organized.
+
+        Your verification code is: ${code}
+
+        This code expires in 15 minutes. If you didn't request this, you can safely ignore this email.
+
+        Once verified, you'll be able to create notes, set reminders, and sync across all your devices.
+
+        - The Nota Team
+      `;
+      await sendEmail(user.email, 'Verify Your Email - Nota', htmlContent, textContent);
     } catch (err) {
       console.error('Email failed:', err.message);
     }
 
     res.status(201).json({
-      message: 'Account created. Please check your email.',
+      message: 'Account created. Please check your email for verification code.',
       email: user.email,
     });
   } catch (err) {
-    console.error('❌ Signup error:', err);
+    console.error('Signup error:', err);
     res.status(400).json({ message: err.message });
   }
 });
@@ -162,11 +209,43 @@ router.post('/send-verification', async (req, res) => {
     await user.save();
 
     try {
-      await sendEmail(
-        user.email,
-        'Resend Verification Code',
-        `<h2>Your new code: <strong>${code}</strong></h2>`
-      );
+      const htmlContent = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="UTF-8">
+          <style>
+            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+            .container { max-width: 550px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 10px; background: #f9fafc; }
+            .header { text-align: center; padding-bottom: 10px; border-bottom: 2px solid #3b82f6; }
+            .header h1 { color: #3b82f6; margin: 0; }
+            .code-box { background: #ffffff; padding: 15px; border-radius: 8px; text-align: center; margin: 20px 0; border: 1px dashed #3b82f6; }
+            .code { font-size: 36px; font-weight: bold; color: #1e293b; letter-spacing: 6px; }
+            .footer { margin-top: 20px; font-size: 12px; color: #999; text-align: center; border-top: 1px solid #e0e0e0; padding-top: 15px; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1>Nota</h1>
+              <p style="color: #6b7280;">Your smart note-taking companion</p>
+            </div>
+            <p>Hello <strong>${user.username}</strong>,</p>
+            <p>You requested a new verification code for your Nota account.</p>
+            <div class="code-box">
+              <span class="code">${code}</span>
+            </div>
+            <p>This code expires in <strong>15 minutes</strong>.</p>
+            <p>If you didn't request this, please ignore this email.</p>
+            <div class="footer">
+              <p>Nota – Your notes, everywhere.</p>
+              <p><a href="https://mern-note-app-brown.vercel.app/unsubscribe" style="color: #3b82f6;">Unsubscribe</a></p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `;
+      await sendEmail(user.email, 'Resend Verification Code - Nota', htmlContent);
     } catch (err) {
       console.error('Resend email failed:', err.message);
     }
@@ -230,11 +309,40 @@ router.post('/forgot-password', async (req, res) => {
 
     const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${token}`;
     try {
-      await sendEmail(
-        user.email,
-        '🔑 Reset Your Password',
-        `<a href="${resetUrl}">Reset Password</a><p>Expires in 1 hour.</p>`
-      );
+      const htmlContent = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="UTF-8">
+          <style>
+            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+            .container { max-width: 550px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 10px; background: #f9fafc; }
+            .header { text-align: center; padding-bottom: 10px; border-bottom: 2px solid #3b82f6; }
+            .header h1 { color: #3b82f6; margin: 0; }
+            .button { display: inline-block; padding: 12px 24px; background: #3b82f6; color: white; text-decoration: none; border-radius: 5px; font-weight: bold; }
+            .footer { margin-top: 20px; font-size: 12px; color: #999; text-align: center; border-top: 1px solid #e0e0e0; padding-top: 15px; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1>Nota Password Reset</h1>
+            </div>
+            <p>Hello <strong>${user.username}</strong>,</p>
+            <p>We received a request to reset your password. Click the button below to create a new one:</p>
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${resetUrl}" class="button">Reset Password</a>
+            </div>
+            <p>This link expires in <strong>1 hour</strong>. If you didn't request this, please ignore this email.</p>
+            <div class="footer">
+              <p>Nota – Your notes, everywhere.</p>
+              <p><a href="https://mern-note-app-brown.vercel.app/unsubscribe" style="color: #3b82f6;">Unsubscribe</a></p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `;
+      await sendEmail(user.email, 'Reset Your Password - Nota', htmlContent);
     } catch (err) {
       console.error('Reset email failed:', err.message);
     }
@@ -377,7 +485,27 @@ router.post('/test-email', async (req, res) => {
   const { to } = req.body;
   if (!to) return res.status(400).json({ message: 'Missing "to" email' });
   try {
-    await sendEmail(to, '🔧 Debug Test', '<h1>✅ Success!</h1><p>Gmail API is working.</p>');
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <style>
+          body { font-family: Arial, sans-serif; }
+          .container { max-width: 500px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px; }
+          h1 { color: #3b82f6; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <h1>Email Test Successful</h1>
+          <p>Your Gmail API is working perfectly.</p>
+          <p>– The Nota Team</p>
+        </div>
+      </body>
+      </html>
+    `;
+    await sendEmail(to, 'Test Email - Nota', htmlContent);
     res.json({ message: 'Test email sent!' });
   } catch (err) {
     console.error('Test email error:', err);

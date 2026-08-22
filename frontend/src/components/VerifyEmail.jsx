@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
-import { FaSun, FaMoon, FaCheckCircle, FaTimesCircle } from 'react-icons/fa';
+import { FaSun, FaMoon, FaCheckCircle, FaTimesCircle, FaEnvelope } from 'react-icons/fa';
 import api from '../api';
 
 const VerifyEmail = () => {
@@ -16,11 +16,9 @@ const VerifyEmail = () => {
   const [message, setMessage] = useState('');
   const [resendLoading, setResendLoading] = useState(false);
 
-  // ── Cooldown state (5 min = 300 seconds) ──
   const [cooldownSeconds, setCooldownSeconds] = useState(300);
   const [isCooldown, setIsCooldown] = useState(true);
 
-  // ── Start countdown on mount (code just sent) ──
   useEffect(() => {
     if (cooldownSeconds > 0 && isCooldown) {
       const timer = setTimeout(() => {
@@ -56,7 +54,7 @@ const VerifyEmail = () => {
   };
 
   const handleResend = async () => {
-    if (isCooldown) return; // button disabled, but just in case
+    if (isCooldown) return;
     setResendLoading(true);
     setError('');
     setMessage('');
@@ -64,7 +62,6 @@ const VerifyEmail = () => {
     try {
       const response = await api.post('/auth/send-verification', { email });
       setMessage(response.data.message);
-      // Reset cooldown
       setCooldownSeconds(300);
       setIsCooldown(true);
     } catch (err) {
@@ -106,6 +103,13 @@ const VerifyEmail = () => {
             Enter the 6-digit code sent to <br />
             <span className="font-medium text-gray-700 dark:text-gray-300">{email || 'your email'}</span>
           </p>
+
+          <div className="mt-3 flex items-center justify-center gap-2 text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700/30 rounded-lg py-2 px-4 border border-gray-200 dark:border-gray-700">
+            <FaEnvelope className="text-blue-500 text-sm" />
+            <span>
+              <strong>Didn't see the code?</strong> Check your <strong>Spam</strong> or <strong>Junk</strong> folder.
+            </span>
+          </div>
         </div>
 
         {message && (
@@ -162,6 +166,9 @@ const VerifyEmail = () => {
             >
               {resendLoading ? 'Sending...' : isCooldown ? `Resend in ${formatTime(cooldownSeconds)}` : 'Resend Code'}
             </button>
+          </p>
+          <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+            Also check your <strong>Spam</strong> or <strong>Junk</strong> folder
           </p>
         </div>
 

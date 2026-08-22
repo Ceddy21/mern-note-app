@@ -25,13 +25,11 @@ const Profile = () => {
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  // ── Delete cooldown states ──
   const [deleteCooldown, setDeleteCooldown] = useState(0);
   const [deleteCooldownActive, setDeleteCooldownActive] = useState(false);
 
   const fileInputRef = useRef(null);
 
-  // ── Cooldown timer effect ──
   useEffect(() => {
     if (deleteCooldownActive && deleteCooldown > 0) {
       const timer = setTimeout(() => {
@@ -120,7 +118,6 @@ const Profile = () => {
       const res = await api.post('/users/delete-request');
       setMessage(res.data.message);
       setDeleteStep('confirm');
-      // Start cooldown
       setDeleteCooldown(300);
       setDeleteCooldownActive(true);
     } catch (err) {
@@ -164,7 +161,6 @@ const Profile = () => {
     <div className="min-h-screen bg-gray-100 dark:bg-gray-900 pt-16 transition-colors duration-300">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
 
-        {/* ── Top row: Back + Theme Toggle ── */}
         <div className="flex items-center justify-between mb-4 sm:mb-6">
           <button
             onClick={() => navigate(-1)}

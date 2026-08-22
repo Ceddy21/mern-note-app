@@ -16,7 +16,6 @@ const PORT = process.env.PORT || 5000;
 // ── Security Headers ──
 app.use(helmet());
 
-// ── Trust Proxy (Required for Rate Limiting behind Render) ──
 app.set('trust proxy', 1);
 
 // ── CORS ──
@@ -59,8 +58,8 @@ mongoose.connect(process.env.MONGODB_URI, {
   serverSelectionTimeoutMS: 30000,
   socketTimeoutMS: 45000,
 })
-  .then(() => console.log('✅ MongoDB Connection Successful'))
-  .catch((err) => console.error('❌ MongoDB Connection Failed:', err));
+  .then(() => console.log('MongoDB Connection Successful'))
+  .catch((err) => console.error('MongoDB Connection Failed:', err));
 
 // ── Routes ──
 app.use('/api/auth', authRoutes);
@@ -85,5 +84,5 @@ app.get('/api/debug/users', async (req, res) => {
 
 // ── Start Server ──
 app.listen(PORT, () => {
-  console.log(`🚀 Server running on http://localhost:${PORT}`);
+  console.log(`Server running on http://localhost:${PORT}`);
 });
