@@ -51,3 +51,18 @@ Thumbs.db
 
 gmail_credentials.json
 token.json
+
+# Android / Capacitor
+frontend/android/.gradle/
+frontend/android/local.properties
+frontend/android/app/build/
+frontend/android/app/build/outputs/
+frontend/android/app/*.apk
+frontend/android/captures/
+
+# Capacitor assets (generated)
+frontend/resources/
+frontend/assets/
+
+# APK file (we copy it to public/)
+frontend/android/app/build/outputs/apk/debug/*.apk

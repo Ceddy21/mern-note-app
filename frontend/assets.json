@@ -1,0 +1,10 @@
+{
+  "icon": {
+    "sources": [
+      {
+        "filename": "icon.png",
+        "size": 1024
+      }
+    ]
+  }
+}
