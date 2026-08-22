@@ -6,7 +6,55 @@ const passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const User = require('../models/User');
 const crypto = require('crypto');
-const nodemailer = require('nodemailer');
+const { google } = require('googleapis');
+
+// ─── Gmail API Setup ───
+const oAuth2Client = new google.auth.OAuth2(
+  process.env.GMAIL_CLIENT_ID,
+  process.env.GMAIL_CLIENT_SECRET,
+  'http://localhost:5000'
+);
+
+oAuth2Client.setCredentials({
+  refresh_token: process.env.GMAIL_REFRESH_TOKEN,
+});
+
+// ─── Email sending function ───
+const sendEmail = async (to, subject, htmlContent) => {
+  try {
+    const gmail = google.gmail({ version: 'v1', auth: oAuth2Client });
+    
+    const messageParts = [
+      `From: "Nota" <${process.env.EMAIL_FROM}>`,
+      `To: ${to}`,
+      `Subject: ${subject}`,
+      'Content-Type: text/html; charset=utf-8',
+      'MIME-Version: 1.0',
+      '',
+      htmlContent,
+    ];
+    
+    const message = messageParts.join('\r\n');
+    const encodedMessage = Buffer.from(message)
+      .toString('base64')
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=+$/, '');
+
+    const response = await gmail.users.messages.send({
+      userId: 'me',
+      requestBody: {
+        raw: encodedMessage,
+      },
+    });
+
+    console.log('✅ Email sent via Gmail API:', response.data.id);
+    return response.data;
+  } catch (err) {
+    console.error('❌ Gmail API error:', err);
+    throw err;
+  }
+};
 
 // ─── Password Helper ───
 const isPasswordStrong = (password) => {
@@ -20,46 +68,8 @@ const isPasswordStrong = (password) => {
 
 // ─── Generate JWT Token ───
 const generateToken = (userId) => {
-  return jwt.sign(
-    { userId },
-    process.env.JWT_SECRET,
-    { expiresIn: '7d' }
-  );
+  return jwt.sign({ userId }, process.env.JWT_SECRET, { expiresIn: '7d' });
 };
-
-// ─── Email Transporter ───
-let transporter;
-try {
-  // Log environment variables (mask password)
-  console.log('📧 EMAIL_HOST:', process.env.EMAIL_HOST);
-  console.log('📧 EMAIL_PORT:', process.env.EMAIL_PORT);
-  console.log('📧 EMAIL_SECURE:', process.env.EMAIL_SECURE);
-  console.log('📧 EMAIL_USER:', process.env.EMAIL_USER);
-  console.log('📧 EMAIL_FROM:', process.env.EMAIL_FROM);
-  console.log('📧 EMAIL_PASS exists:', !!process.env.EMAIL_PASS);
-
-  transporter = nodemailer.createTransport({
-    host: process.env.EMAIL_HOST || 'smtp.gmail.com',
-    port: parseInt(process.env.EMAIL_PORT) || 587,
-    secure: process.env.EMAIL_SECURE === 'true',
-    auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS,
-    },
-    family: 4, // ✅ Force IPv4
-    connectionTimeout: 30000,
-    greetingTimeout: 30000,
-    socketTimeout: 60000,
-    tls: { rejectUnauthorized: false },
-    debug: true, // Enable SMTP debug logs
-    logger: true,
-  });
-
-  console.log('✅ Transporter created successfully');
-} catch (err) {
-  console.error('❌ Transporter creation error:', err);
-  transporter = null;
-}
 
 // ─── Cooldown helper ───
 const checkCooldown = (user) => {
@@ -89,10 +99,7 @@ router.post('/signup', async (req, res) => {
     }
 
     const existingUser = await User.findOne({ $or: [{ email: email.toLowerCase() }, { username }] });
-    if (existingUser) {
-      console.log('❌ User already exists');
-      return res.status(400).json({ message: 'User already exists' });
-    }
+    if (existingUser) return res.status(400).json({ message: 'User already exists' });
 
     const hashedPassword = await bcrypt.hash(password, 10);
     const user = new User({
@@ -102,39 +109,21 @@ router.post('/signup', async (req, res) => {
       isVerified: false,
     });
     await user.save();
-    console.log('✅ User saved');
 
     const code = Math.floor(100000 + Math.random() * 900000).toString();
     user.verificationCode = code;
     user.verificationCodeExpires = Date.now() + 15 * 60 * 1000;
     user.lastVerificationRequestAt = new Date();
     await user.save();
-    console.log('✅ Verification code generated');
 
-    // ── Send email with retry ──
-    if (transporter) {
-      let attempts = 0;
-      let success = false;
-      while (attempts < 3 && !success) {
-        attempts++;
-        try {
-          console.log(`📧 Attempt ${attempts} sending to ${user.email}`);
-          const info = await transporter.sendMail({
-            to: user.email,
-            from: `"Nota" <${process.env.EMAIL_FROM || process.env.EMAIL_USER}>`,
-            subject: '🔐 Verify Your Account',
-            text: `Your code: ${code}`,
-            html: `<h2>Your code: <strong>${code}</strong></h2><p>Valid for 15 minutes.</p>`,
-          });
-          console.log('✅ Email sent:', info.messageId);
-          success = true;
-        } catch (err) {
-          console.error(`❌ Attempt ${attempts} error:`, err.message);
-          if (attempts < 3) await new Promise(r => setTimeout(r, 2000));
-        }
-      }
-    } else {
-      console.error('❌ Transporter is null');
+    try {
+      await sendEmail(
+        user.email,
+        '🔐 Verify Your Account',
+        `<h2>Your code: <strong>${code}</strong></h2><p>Valid for 15 minutes.</p>`
+      );
+    } catch (err) {
+      console.error('Email failed:', err.message);
     }
 
     res.status(201).json({
@@ -172,30 +161,19 @@ router.post('/send-verification', async (req, res) => {
     user.lastVerificationRequestAt = new Date();
     await user.save();
 
-    if (transporter) {
-      let attempts = 0;
-      let success = false;
-      while (attempts < 3 && !success) {
-        attempts++;
-        try {
-          await transporter.sendMail({
-            to: user.email,
-            from: `"Nota" <${process.env.EMAIL_FROM || process.env.EMAIL_USER}>`,
-            subject: '🔐 Resend Verification',
-            text: `Your new code: ${code}`,
-            html: `<h2>Your new code: <strong>${code}</strong></h2>`,
-          });
-          success = true;
-        } catch (err) {
-          console.error(`❌ Resend attempt ${attempts} error:`, err.message);
-          if (attempts < 3) await new Promise(r => setTimeout(r, 2000));
-        }
-      }
+    try {
+      await sendEmail(
+        user.email,
+        'Resend Verification Code',
+        `<h2>Your new code: <strong>${code}</strong></h2>`
+      );
+    } catch (err) {
+      console.error('Resend email failed:', err.message);
     }
 
     res.json({ message: 'Verification code sent.' });
   } catch (err) {
-    console.error('❌ Resend error:', err);
+    console.error('Resend error:', err);
     res.status(500).json({ message: 'Error sending email.' });
   }
 });
@@ -226,12 +204,12 @@ router.post('/verify-email', async (req, res) => {
   }
 });
 
-// ─── FORGOT PASSWORD ─── (shortened for space – kept functional)
+// ─── Forgot Password ───
 router.post('/forgot-password', async (req, res) => {
-  // ... (same as earlier, we'll keep it concise)
   try {
     const { email } = req.body;
     if (!email) return res.status(400).json({ message: 'Email required' });
+
     const user = await User.findOne({ email: email.toLowerCase() });
     if (!user) return res.json({ message: 'If an account exists, a reset link has been sent.' });
 
@@ -251,22 +229,24 @@ router.post('/forgot-password', async (req, res) => {
     await user.save();
 
     const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${token}`;
-    if (transporter) {
-      transporter.sendMail({
-        to: user.email,
-        from: `"Nota" <${process.env.EMAIL_FROM || process.env.EMAIL_USER}>`,
-        subject: '🔑 Reset Password',
-        text: `Click: ${resetUrl}\n\nExpires in 1 hour.`,
-        html: `<a href="${resetUrl}">Reset Password</a><p>Expires in 1 hour.</p>`,
-      }).catch(err => console.error('❌ Reset email error:', err));
+    try {
+      await sendEmail(
+        user.email,
+        '🔑 Reset Your Password',
+        `<a href="${resetUrl}">Reset Password</a><p>Expires in 1 hour.</p>`
+      );
+    } catch (err) {
+      console.error('Reset email failed:', err.message);
     }
+
     res.json({ message: 'If an account exists, a reset link has been sent.' });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error('Forgot password error:', err);
+    res.status(500).json({ message: 'Error sending email.' });
   }
 });
 
-// ─── RESET PASSWORD ─── (shortened)
+// ─── Reset Password ───
 router.post('/reset-password', async (req, res) => {
   try {
     const { token, newPassword } = req.body;
@@ -297,7 +277,7 @@ router.post('/reset-password', async (req, res) => {
   }
 });
 
-// ─── LOGIN ───
+// ─── Login ───
 router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -329,7 +309,7 @@ router.post('/login', async (req, res) => {
   }
 });
 
-// ─── GOOGLE OAUTH ───
+// ─── Google OAuth ───
 passport.use(
   new GoogleStrategy(
     {
@@ -375,7 +355,7 @@ router.get(
   }
 );
 
-// ─── GET CURRENT USER ───
+// ─── Get Current User ───
 router.get('/me', async (req, res) => {
   res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
   res.set('Pragma', 'no-cache');
@@ -392,31 +372,16 @@ router.get('/me', async (req, res) => {
   }
 });
 
-// ─── TEST EMAIL ROUTE ───
+// ─── Test Email Route ───
 router.post('/test-email', async (req, res) => {
   const { to } = req.body;
   if (!to) return res.status(400).json({ message: 'Missing "to" email' });
-
-  console.log(`📧 Test email requested for: ${to}`);
-
-  if (!transporter) {
-    console.error('❌ Transporter is null');
-    return res.status(500).json({ message: 'Email transporter not configured' });
-  }
-
   try {
-    const info = await transporter.sendMail({
-      to: to,
-      from: `"Nota Debug" <${process.env.EMAIL_FROM || process.env.EMAIL_USER}>`,
-      subject: '🔧 Debug Test Email',
-      text: 'If you receive this, email is working.',
-      html: '<h1>✅ Debug Test</h1><p>Your email config is correct.</p>',
-    });
-    console.log('✅ Test email sent:', info.messageId);
-    res.json({ message: 'Test email sent!', messageId: info.messageId });
+    await sendEmail(to, '🔧 Debug Test', '<h1>✅ Success!</h1><p>Gmail API is working.</p>');
+    res.json({ message: 'Test email sent!' });
   } catch (err) {
-    console.error('❌ Test email error:', err);
-    res.status(500).json({ error: err.message, stack: err.stack });
+    console.error('Test email error:', err);
+    res.status(500).json({ error: err.message });
   }
 });
 

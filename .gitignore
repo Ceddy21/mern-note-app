@@ -48,3 +48,6 @@ Thumbs.db
 # MISC
 .prettierrc
 .eslintcache
+
+gmail_credentials.json
+token.json
