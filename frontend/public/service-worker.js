@@ -3,9 +3,6 @@ const urlsToCache = [
   '/',
   '/index.html',
   '/manifest.json',
-  '/static/js/main.chunk.js',
-  '/static/js/0.chunk.js',
-  '/static/js/bundle.js',
 ];
 
 self.addEventListener('install', (event) => {
@@ -13,10 +10,20 @@ self.addEventListener('install', (event) => {
     caches.open(CACHE_NAME)
       .then((cache) => {
         console.log('Cache opened');
-        return cache.addAll(urlsToCache);
+        // ── Cache each URL individually to catch errors ──
+        const cachePromises = urlsToCache.map((url) => {
+          return cache.add(url).catch((err) => {
+            console.warn(`Failed to cache ${url}:`, err);
+            return Promise.resolve();
+          });
+        });
+        return Promise.all(cachePromises);
+      })
+      .then(() => {
+        console.log('All cache attempts complete');
       })
       .catch((err) => {
-        console.error('Cache addAll error:', err);
+        console.error('Cache open failed:', err);
       })
   );
 });
@@ -27,6 +34,7 @@ self.addEventListener('activate', (event) => {
       return Promise.all(
         cacheNames.map((name) => {
           if (name !== CACHE_NAME) {
+            console.log(`Deleting old cache: ${name}`);
             return caches.delete(name);
           }
         })
