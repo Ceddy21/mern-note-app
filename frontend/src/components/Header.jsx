@@ -83,6 +83,7 @@ const Header = ({ user, onLogout, onHomeClick }) => {
                 </div>
               )}
 
+              {/* Logout Button */}
               <button
                 onClick={handleLogoutClick}
                 className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition"
@@ -91,6 +92,7 @@ const Header = ({ user, onLogout, onHomeClick }) => {
                 <FaSignOutAlt className="text-gray-600 dark:text-gray-300" />
               </button>
 
+              {/* Theme Toggle Button */}
               <button
                 onClick={handleToggle}
                 className="relative w-10 h-10 sm:w-12 sm:h-12 rounded-full 
@@ -122,6 +124,8 @@ const Header = ({ user, onLogout, onHomeClick }) => {
         onConfirm={confirmLogout}
         title="Logout?"
         message="Are you sure you want to sign out? You'll need to log in again to access your notes."
+        confirmText="Logout"
+        cancelText="Cancel"
       />
     </>
   );

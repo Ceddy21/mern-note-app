@@ -2,7 +2,15 @@ import React from 'react';
 import { FaExclamationTriangle, FaTimes } from 'react-icons/fa';
 import { useTheme } from '../context/ThemeContext';
 
-const ConfirmModal = ({ isOpen, onClose, onConfirm, title, message }) => {
+const ConfirmModal = ({ 
+  isOpen, 
+  onClose, 
+  onConfirm, 
+  title, 
+  message, 
+  confirmText = 'Delete',
+  cancelText = 'Cancel'
+}) => {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
 
@@ -33,14 +41,14 @@ const ConfirmModal = ({ isOpen, onClose, onConfirm, title, message }) => {
             className="px-4 py-2 rounded-lg bg-gray-200 dark:bg-gray-700 
                        hover:bg-gray-300 dark:hover:bg-gray-600 transition"
           >
-            Cancel
+            {cancelText}
           </button>
           <button
             onClick={onConfirm}
             className="px-4 py-2 rounded-lg bg-red-500 hover:bg-red-600 
                        text-white transition font-semibold"
           >
-            Delete
+            {confirmText}
           </button>
         </div>
       </div>
