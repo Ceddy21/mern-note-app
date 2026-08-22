@@ -52,24 +52,39 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// ─── FIXED FETCH HANDLER ───
+// ─── FIXED FETCH HANDLER – Skip API & non-GET requests ───
 self.addEventListener('fetch', (event) => {
+  const url = new URL(event.request.url);
+  
+  // Skip API requests, non-GET methods, and external URLs
+  if (
+    url.pathname.startsWith('/api/') ||
+    event.request.method !== 'GET' ||
+    url.origin !== self.location.origin
+  ) {
+    // Let the browser handle these normally
+    return;
+  }
+
   event.respondWith(
     caches.match(event.request)
       .then((response) => {
-        // If cached, return it
         if (response) {
           return response;
         }
-        // Otherwise try to fetch from network
         return fetch(event.request);
       })
       .catch(() => {
-        // ── Always return a Response – even if everything fails ──
-        return new Response('Offline', {
-          status: 503,
-          statusText: 'Service Unavailable'
-        });
+        // For navigation requests, show a simple offline page
+        if (event.request.mode === 'navigate') {
+          return new Response('You are offline. Please check your internet connection.', {
+            status: 503,
+            statusText: 'Service Unavailable',
+            headers: { 'Content-Type': 'text/plain' },
+          });
+        }
+        // For other failed requests, just return a generic 503
+        return new Response('Offline', { status: 503, statusText: 'Service Unavailable' });
       })
   );
 });
